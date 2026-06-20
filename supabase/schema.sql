@@ -4,8 +4,8 @@ create extension if not exists "pgcrypto";
 
 create type public.business_type as enum ('Veterinaria','Pet Shop','Hotel Felino','Cuidador');
 create type public.product_category as enum ('Alimentos','Arenas','Juguetes','Rascadores','Transportadoras','Fuentes de agua','Accesorios');
-create type public.review_state as enum ('Nueva','En conversación','Resuelta','Cerrada');
-create type public.reminder_type as enum ('Cumpleaños','Vacuna','Desparasitación');
+create type public.review_state as enum ('Publicada','En conversación','Resuelta','En revisión');
+create type public.reminder_type as enum ('Cumpleaños','Vacuna','Desparasitación','Control veterinario','Otro');
 create type public.trust_level as enum ('Básico','Activo','Confiable','Experto');
 
 -- Perfil público mínimo asociado 1:1 con Supabase Auth.
@@ -17,8 +17,10 @@ create table public.users (
 );
 create table public.cats (
   id uuid primary key default gen_random_uuid(), user_id uuid not null references public.users(id) on delete cascade,
-  nombre text not null, foto text, sexo text not null check (sexo in ('Hembra','Macho')), edad int check (edad between 0 and 30),
-  fecha_nacimiento date, peso numeric(4,1) check (peso > 0), raza text, esterilizado boolean not null default false,
+  nombre text not null, foto text, sexo text not null check (sexo in ('Hembra','Macho')),
+  fecha_nacimiento date, peso numeric(4,1) check (peso > 0), fecha_peso date, raza text, esterilizado boolean not null default false,
+  tipo_vida text not null default 'Interior' check (tipo_vida in ('Interior','Exterior')), personalidad text,
+  veterinaria_habitual text, observaciones_dueno text,
   created_at timestamptz not null default now()
 );
 create table public.cat_preferences (
@@ -46,7 +48,8 @@ create table public.reviews (
   id uuid primary key default gen_random_uuid(), user_id uuid not null references public.users(id) on delete cascade,
   business_id uuid references public.businesses(id) on delete cascade, product_id uuid references public.products(id) on delete cascade,
   puntuacion int not null check (puntuacion between 1 and 5), comentario text not null check (char_length(comentario) between 12 and 3000),
-  estado review_state not null default 'Nueva', helpful_count int not null default 0, unhelpful_count int not null default 0,
+  estado review_state not null default 'Publicada', helpful_count int not null default 0, unhelpful_count int not null default 0,
+  photos text[] not null default '{}', video_metadata jsonb,
   business_response text, moderation_state text not null default 'approved' check (moderation_state in ('pending','approved','rejected')),
   created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
   check ((business_id is not null)::int + (product_id is not null)::int = 1)
@@ -89,6 +92,17 @@ create table public.review_reports (
   reporter_id uuid not null references public.users(id) on delete cascade, reason text not null, status text default 'open', created_at timestamptz default now(),
   unique(review_id,reporter_id)
 );
+create table public.user_reports (
+  id uuid primary key default gen_random_uuid(), reporter_id uuid not null references public.users(id) on delete cascade,
+  reported_user_id uuid not null references public.users(id) on delete cascade,
+  reason text not null check (reason in ('Spam','Estafa','Acoso','Suplantación','Otro')),
+  status text not null default 'open', created_at timestamptz default now(), check (reporter_id <> reported_user_id)
+);
+create table public.catalog_suggestions (
+  id uuid primary key default gen_random_uuid(), user_id uuid not null references public.users(id) on delete cascade,
+  type text not null check (type in ('Producto','Veterinaria','Negocio')), name text not null, district text,
+  status text not null default 'En revisión', created_at timestamptz default now()
+);
 create table public.promotions (
   id uuid primary key default gen_random_uuid(), business_id uuid not null references public.businesses(id) on delete cascade,
   title text not null, description text, starts_at timestamptz, ends_at timestamptz, sponsored boolean default false, active boolean default true
@@ -115,7 +129,7 @@ end $$;
 create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
 
 -- RLS: contenido público legible; datos personales solo para su propietario.
-do $$ declare t text; begin foreach t in array array['users','cats','cat_preferences','businesses','products','reviews','follows','notifications','reminders','conversations','messages','collections','collection_items','review_reports','promotions','business_metrics'] loop execute format('alter table public.%I enable row level security',t); end loop; end $$;
+do $$ declare t text; begin foreach t in array array['users','cats','cat_preferences','businesses','products','reviews','follows','notifications','reminders','conversations','messages','collections','collection_items','review_reports','user_reports','catalog_suggestions','promotions','business_metrics'] loop execute format('alter table public.%I enable row level security',t); end loop; end $$;
 create policy "public users" on public.users for select using (true);
 create policy "own user" on public.users for update using (auth.uid()=id);
 create policy "public businesses" on public.businesses for select using (true);
@@ -138,6 +152,10 @@ create policy "own collections" on public.collections for all using (auth.uid()=
 create policy "own collection items" on public.collection_items for all using (exists(select 1 from public.collections c where c.id=collection_id and c.user_id=auth.uid()));
 create policy "report reviews" on public.review_reports for insert with check (auth.uid()=reporter_id);
 create policy "own reports" on public.review_reports for select using (auth.uid()=reporter_id);
+create policy "report users" on public.user_reports for insert with check (auth.uid()=reporter_id);
+create policy "own user reports" on public.user_reports for select using (auth.uid()=reporter_id);
+create policy "suggest catalog items" on public.catalog_suggestions for insert with check (auth.uid()=user_id);
+create policy "own catalog suggestions" on public.catalog_suggestions for select using (auth.uid()=user_id);
 create policy "public promotions" on public.promotions for select using (active=true);
 
 -- Los administradores pueden moderar sin exponer esta capacidad al cliente normal.

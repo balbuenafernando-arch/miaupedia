@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./functional.css";
+import "./refinement.css";
 
 export const metadata: Metadata = {
   title: "Miaupedia — Mejores decisiones para tu gato",
