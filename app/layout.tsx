@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./functional.css";
 import "./refinement.css";
+import "./testing-fixes.css";
+import "./dashboard.css";
+import "./profile-completion.css";
 
 export const metadata: Metadata = {
   title: "Miaupedia — Mejores decisiones para tu gato",

@@ -46,13 +46,17 @@ create table public.products (
 );
 create table public.reviews (
   id uuid primary key default gen_random_uuid(), user_id uuid not null references public.users(id) on delete cascade,
-  business_id uuid references public.businesses(id) on delete cascade, product_id uuid references public.products(id) on delete cascade,
+  business_id uuid references public.businesses(id) on delete cascade, product_id uuid references public.products(id) on delete cascade, demo_listing_id int,
   puntuacion int not null check (puntuacion between 1 and 5), comentario text not null check (char_length(comentario) between 12 and 3000),
   estado review_state not null default 'Publicada', helpful_count int not null default 0, unhelpful_count int not null default 0,
   photos text[] not null default '{}', video_metadata jsonb,
   business_response text, moderation_state text not null default 'approved' check (moderation_state in ('pending','approved','rejected')),
   created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
-  check ((business_id is not null)::int + (product_id is not null)::int = 1)
+  check ((business_id is not null)::int + (product_id is not null)::int + (demo_listing_id is not null)::int = 1)
+);
+create table public.demo_follows (
+  user_id uuid not null references public.users(id) on delete cascade, listing_id int not null,
+  created_at timestamptz default now(), primary key(user_id,listing_id)
 );
 create table public.follows (
   id uuid primary key default gen_random_uuid(), user_id uuid not null references public.users(id) on delete cascade,
@@ -129,7 +133,7 @@ end $$;
 create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
 
 -- RLS: contenido público legible; datos personales solo para su propietario.
-do $$ declare t text; begin foreach t in array array['users','cats','cat_preferences','businesses','products','reviews','follows','notifications','reminders','conversations','messages','collections','collection_items','review_reports','user_reports','catalog_suggestions','promotions','business_metrics'] loop execute format('alter table public.%I enable row level security',t); end loop; end $$;
+do $$ declare t text; begin foreach t in array array['users','cats','cat_preferences','businesses','products','reviews','follows','demo_follows','notifications','reminders','conversations','messages','collections','collection_items','review_reports','user_reports','catalog_suggestions','promotions','business_metrics'] loop execute format('alter table public.%I enable row level security',t); end loop; end $$;
 create policy "public users" on public.users for select using (true);
 create policy "own user" on public.users for update using (auth.uid()=id);
 create policy "public businesses" on public.businesses for select using (true);
@@ -142,6 +146,7 @@ create policy "authors delete reviews" on public.reviews for delete using (auth.
 create policy "own cats" on public.cats for all using (auth.uid()=user_id) with check (auth.uid()=user_id);
 create policy "own cat preferences" on public.cat_preferences for all using (exists(select 1 from public.cats c where c.id=cat_id and c.user_id=auth.uid()));
 create policy "own follows" on public.follows for all using (auth.uid()=user_id) with check (auth.uid()=user_id);
+create policy "own demo follows" on public.demo_follows for all using (auth.uid()=user_id) with check (auth.uid()=user_id);
 create policy "own notifications" on public.notifications for select using (auth.uid()=user_id);
 create policy "own reminders" on public.reminders for all using (exists(select 1 from public.cats c where c.id=cat_id and c.user_id=auth.uid()));
 create policy "conversation members" on public.conversations for select using (auth.uid() in (sender_id,receiver_id));
