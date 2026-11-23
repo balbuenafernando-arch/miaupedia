@@ -35,6 +35,10 @@ Los perfiles y recordatorios de la versión demo permanecen en el navegador dond
 
 En producción, el inicio de sesión admite cuentas habilitadas por un administrador. Activa el registro y la recuperación de autoservicio solo cuando Supabase tenga un servicio de correo público configurado y verificado. Para mostrarlos en la aplicación, define `NEXT_PUBLIC_AUTH_EMAIL_ENABLED=true` y vuelve a desplegar.
 
+## Instalar en Android
+
+En Chrome para Android, abre `https://miaupedia.vercel.app` y elige **Instalar aplicación** o **Añadir a pantalla de inicio** en el menú. Miaupedia se abre como aplicación independiente desde el icono. Si pierdes la conexión, se muestra una página con un acceso para volver a intentar. La sesión, los perfiles y las reseñas usan la red.
+
 ## Verificación
 
 ```bash
