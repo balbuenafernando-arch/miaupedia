@@ -2,20 +2,22 @@
 
 import { useEffect, useState } from "react";
 
-export function usePersistentState<T>(key: string, initialValue: T) {
+export function usePersistentState<T>(key: string | null, initialValue: T) {
   const [value, setValue] = useState<T>(initialValue);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem(key);
+      const stored = key ? window.localStorage.getItem(key) : null;
       if (stored) setValue(JSON.parse(stored) as T);
     } catch { /* An invalid demo cache should never break the app. */ }
     setHydrated(true);
   }, [key]);
 
   useEffect(() => {
-    if (hydrated) window.localStorage.setItem(key, JSON.stringify(value));
+    if (hydrated && key) {
+      try { window.localStorage.setItem(key, JSON.stringify(value)); } catch { /* Keep the current view usable when storage is full. */ }
+    }
   }, [hydrated, key, value]);
 
   return [value, setValue, hydrated] as const;

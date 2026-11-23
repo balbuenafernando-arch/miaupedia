@@ -1,4 +1,4 @@
--- Señales anónimas y mínimas para recomendaciones basadas en comportamiento real.
+-- Señales de los gatos de la cuenta autenticada. Las políticas RLS siguen activas.
 -- No expone nombre del gato, usuario, foto, peso ni fecha de nacimiento exacta.
 create or replace function public.recommendation_signals()
 returns table (
@@ -6,7 +6,7 @@ returns table (
   lifestyle text, preferences text[], listing_id integer, would_choose_again boolean
 )
 language sql
-security definer
+security invoker
 set search_path = public
 as $$
   select c.id, coalesce(c.raza, ''),
@@ -17,7 +17,7 @@ as $$
   from public.demo_follows f
   join public.cats c on c.user_id = f.user_id
   left join public.cat_preferences p on p.cat_id = c.id
-  where auth.uid() is not null;
+  where c.user_id = (select auth.uid());
 $$;
 
 revoke all on function public.recommendation_signals() from public;

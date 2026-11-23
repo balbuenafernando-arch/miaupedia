@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { MiaupediaLogo as Logo } from "@/components/miaupedia-logo";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Bell, Bookmark, CalendarDays, Camera, Cat, Check, ChevronDown, ChevronRight, Heart, Home, LogOut, MapPin, Menu, MessageCircle, Pencil, Plus, Search, ShieldCheck, SlidersHorizontal, Sparkles, Star, Trash2, X } from "lucide-react";
 import { places, reviews, type Place } from "@/lib/data";
@@ -6,12 +8,11 @@ import { AuthModal, Onboarding, type DemoUser } from "@/components/functional-mo
 import { defaultCat, usePersistentState, type CatProfile, type Reminder, type UserReview } from "@/lib/use-persistent-state";
 import { reviewNeedsModeration, validateCommunityContent } from "@/lib/content-filter";
 import { createClient } from "@/lib/supabase";
-import { deleteReminder as deleteReminderRemote, deleteReview as deleteReviewRemote, loadPrivateData, loadRecommendationSignals, saveCat as saveCatRemote, saveDemoFollow, saveReminder as saveReminderRemote, saveReview as saveReviewRemote, uploadCatPhoto } from "@/lib/supabase-repository";
+import { deleteCat as deleteCatRemote, deleteReminder as deleteReminderRemote, deleteReview as deleteReviewRemote, loadPrivateData, loadRecommendationSignals, saveCat as saveCatRemote, saveDemoFollow, saveReminder as saveReminderRemote, saveReview as saveReviewRemote, uploadCatPhoto } from "@/lib/supabase-repository";
 import { calculateAge, missingProfileFields, profileCompletion, syncBirthdayReminder } from "@/lib/cat-profile";
 import { buildSimilarCatRecommendations, type FollowSignal } from "@/lib/recommendations";
 type Tab = "Inicio" | "Explorar" | "Mi gato" | "Agenda";
 type Editor = "cat" | "reminder" | "review" | "compare" | null;
-function Logo() { return <div className="logo"><span className="logo-mark"><Cat size={20}/></span><span>Miau<span>pedia</span></span></div>; }
 function Stars({ rating }: {
     rating: number;
 }) { return <span className="stars"><Star size={15} fill="currentColor"/><b>{rating.toFixed(1)}</b></span>; }
@@ -29,16 +30,39 @@ function PlaceCard({ place, saved, onSave, onOpen, onCompare }: {
     return <article className="place-card" onClick={onOpen}><div className="place-image" style={{ backgroundImage: `url(${place.image})` }}>{place.sponsored && <span className="sponsored">Patrocinado</span>}<button className={`save ${saved ? "active" : ""}`} onClick={e => { e.stopPropagation(); onSave(); }} aria-label="Guardar"><Heart size={18} fill={saved ? "currentColor" : "none"}/></button></div><div className="place-copy"><div className="place-meta"><span>{place.category}</span><Stars rating={place.rating}/></div><h3>{place.name}</h3><p><MapPin size={14}/> {place.district} · {place.reviews} reseñas</p><div className="tags">{place.tags.map(t => <span key={t}>{t}</span>)}</div><div className="price-row"><strong>{place.price}</strong>{place.category === "Producto" ? <button className="compare-add" onClick={e => { e.stopPropagation(); onCompare(); }}>Comparar</button> : place.open && <span className="open">Abierto ahora</span>}</div></div></article>;
 }
 export function MiaupediaApp() {
+    const [mode, setMode, modeHydrated] = usePersistentState<"device" | "account" | null>("miaupedia:workspace", null);
+    const [initialMode, setInitialMode] = useState<"device" | "account" | null>(null);
+    useEffect(() => {
+        try {
+            const hasDeviceData = ["user", "cats", "reminders"].some(key => window.localStorage.getItem(`miaupedia:${key}`) !== null);
+            setInitialMode(hasDeviceData ? "device" : "account");
+        } catch {
+            setInitialMode("account");
+        }
+    }, []);
+    if (!initialMode || !modeHydrated) return <div className="app-loading"><Logo /><span /></div>;
+    const accountAvailable = Boolean(createClient());
+    const deviceOnly = !accountAvailable || (mode ?? initialMode) === "device";
+    return <MiaupediaWorkspace key={String(deviceOnly)} deviceOnly={deviceOnly}
+        switchWorkspace={accountAvailable && (deviceOnly || initialMode === "device")
+            ? () => setMode(deviceOnly ? "account" : "device")
+            : undefined} />;
+}
+
+function MiaupediaWorkspace({ deviceOnly, switchWorkspace }: {
+    deviceOnly: boolean;
+    switchWorkspace?: () => void;
+}) {
     const [tab, setTab] = useState<Tab>("Inicio");
     const [query, setQuery] = useState("");
     const [category, setCategory] = useState("Todos");
     const [district, setDistrict] = useState("Todos");
-    const [saved, setSaved] = usePersistentState<number[]>("miaupedia:follows", [1]);
-    const [cats, setCats, hydrated] = usePersistentState<CatProfile[]>("miaupedia:cats", [defaultCat]);
-    const [reminders, setReminders] = usePersistentState<Reminder[]>("miaupedia:reminders", [{ id: "r1", catId: "demo-luna", type: "Desparasitación", date: "2026-06-24", description: "Desparasitación programada", completed: false }, { id: "r2", catId: "demo-luna", type: "Vacuna", date: "2026-08-12", description: "Vacuna anual", completed: false }]);
-    const [userReviews, setUserReviews] = usePersistentState<UserReview[]>("miaupedia:reviews", []);
-    const [user, setUser] = usePersistentState<DemoUser | null>("miaupedia:user", null);
-    const [onboarded, setOnboarded] = usePersistentState("miaupedia:onboarded", false);
+    const [saved, setSaved] = usePersistentState<number[]>(deviceOnly ? "miaupedia:follows" : null, deviceOnly ? [1] : []);
+    const [cats, setCats, hydrated] = usePersistentState<CatProfile[]>(deviceOnly ? "miaupedia:cats" : null, deviceOnly ? [defaultCat] : []);
+    const [reminders, setReminders] = usePersistentState<Reminder[]>(deviceOnly ? "miaupedia:reminders" : null, deviceOnly ? [{ id: "r1", catId: "demo-luna", type: "Desparasitación", date: "2026-06-24", description: "Desparasitación programada", completed: false }, { id: "r2", catId: "demo-luna", type: "Vacuna", date: "2026-08-12", description: "Vacuna anual", completed: false }] : []);
+    const [userReviews, setUserReviews] = usePersistentState<UserReview[]>(deviceOnly ? "miaupedia:reviews" : null, []);
+    const [user, setUser] = usePersistentState<DemoUser | null>(deviceOnly ? "miaupedia:user" : null, null);
+    const [onboarded, setOnboarded] = usePersistentState(deviceOnly ? "miaupedia:onboarded" : null, false);
     const [selected, setSelected] = useState<Place | null>(null);
     const [compare, setCompare] = useState<number[]>([]);
     const [showFilters, setShowFilters] = useState(false);
@@ -49,41 +73,55 @@ export function MiaupediaApp() {
     const [editingCat, setEditingCat] = useState<CatProfile | null>(null);
     const [editingReview, setEditingReview] = useState<UserReview | null>(null);
     const [mobileOpen, setMobileOpen] = useState(false);
-    const [recommendationSignals, setRecommendationSignals] = useState<FollowSignal[]>([]);
     const primaryCat = cats[0];
     const flash = (m: string) => { setNotice(m); setTimeout(() => setNotice(""), 2500); };
     const requireUser = (fn: () => void) => user ? fn() : setAuthOpen(true);
     const results = useMemo(() => places.filter(p => (category === "Todos" || p.category === category) && (district === "Todos" || p.district === district) && `${p.name} ${p.category} ${p.district}`.toLowerCase().includes(query.toLowerCase())), [category, district, query]);
-    useEffect(() => { const s = createClient(); if (!s)
-        return; const apply = async (id: string) => { try {
-        const remote = await loadPrivateData(id);
-        if (remote) {
-            setCats(remote.cats);
-            setReminders(remote.reminders);
-            setUserReviews(remote.userReviews);
-            setSaved(remote.follows);
-        }
-        setRecommendationSignals(await loadRecommendationSignals());
-    }
-    catch {
-        flash("Sesión iniciada; no se pudo sincronizar la base de datos");
-    } }; s.auth.getUser().then(({ data }) => { if (data.user) {
-        setUser({ id: data.user.id, email: data.user.email || "", name: data.user.user_metadata.display_name || "Miauamigo" });
-        void apply(data.user.id);
-    } }); const { data: l } = s.auth.onAuthStateChange((_e, session) => { if (session) {
-        setUser({ id: session.user.id, email: session.user.email || "", name: session.user.user_metadata.display_name || "Miauamigo" });
-        void apply(session.user.id);
-    } }); return () => l.subscription.unsubscribe(); }, [setCats, setReminders, setSaved, setUser, setUserReviews]);
+    useEffect(() => {
+        if (deviceOnly) return;
+        const client = createClient();
+        if (!client) return;
+        let active = true;
+        let currentUser: string | null = null;
+        let generation = 0;
+        const { data } = client.auth.onAuthStateChange((_event, session) => {
+            const account = session?.user;
+            if ((account?.id ?? null) === currentUser) return;
+            currentUser = account?.id ?? null;
+            const request = ++generation;
+            setUser(null);
+            setCats([]);
+            setReminders([]);
+            setUserReviews([]);
+            setSaved([]);
+            if (!account) return;
+            window.setTimeout(async () => {
+                try {
+                    const remote = await loadPrivateData(account.id);
+                    if (!active || request !== generation || !remote) return;
+                    setCats(remote.cats);
+                    setReminders(remote.reminders);
+                    setUserReviews(remote.userReviews);
+                    setSaved(remote.follows);
+                    setUser({ id: account.id, email: account.email ?? "", name: account.user_metadata.display_name || "Miauamigo" });
+                } catch {
+                    if (active && request === generation) flash("No pudimos cargar tu cuenta. Recarga para volver a intentarlo.");
+                }
+            }, 0);
+        });
+        return () => { active = false; data.subscription.unsubscribe(); };
+    }, [deviceOnly, setCats, setReminders, setSaved, setUser, setUserReviews]);
     const navigate = (next: Tab) => { setTab(next); setMobileOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); };
-    const toggleSaved = (id: number) => requireUser(() => { const willFollow = !saved.includes(id); setSaved(v => willFollow ? [...v, id] : v.filter(x => x !== id)); if (user && createClient()) void saveDemoFollow(user.id, id, willFollow).catch(() => flash("Cambio guardado localmente; sincronización pendiente.")); flash(willFollow ? "Guardado en Favoritos" : "Eliminado de favoritos"); });
+    const toggleSaved = (id: number) => requireUser(() => { const willFollow = !saved.includes(id); setSaved(v => willFollow ? [...v, id] : v.filter(x => x !== id)); if (user && !deviceOnly) void saveDemoFollow(user.id, id, willFollow).catch(() => flash("Cambio guardado localmente; sincronización pendiente.")); flash(willFollow ? "Guardado en Favoritos" : "Eliminado de favoritos"); });
     const addCompare = (id: number) => { setCompare(v => v.includes(id) ? v.filter(x => x !== id) : v.length < 3 ? [...v, id] : v); if (compare.length >= 3 && !compare.includes(id))
         flash("Puedes comparar hasta 3 productos"); };
-    const signOut = async () => { await createClient()?.auth.signOut(); setUser(null); flash("Sesión cerrada"); };
+    const signOut = async () => { if (!deviceOnly) await createClient()?.auth.signOut(); setUser(null); flash("Sesión cerrada"); };
     const saveCatProfile = async (cat: CatProfile) => {
         setCats(editingCat ? cats.map(current => current.id === cat.id ? cat : current) : [...cats, cat]);
-        setReminders(syncBirthdayReminder(cat, reminders));
+        const nextReminders = syncBirthdayReminder(cat, reminders, deviceOnly);
+        setReminders(nextReminders);
         setEditor(null); setShowOnboarding(false); setTab("Mi gato");
-        if (user && createClient()) {
+        if (user && !deviceOnly) {
             try {
                 let uploadedPhoto = cat.photo;
                 if (cat.photo?.startsWith("data:")) {
@@ -92,6 +130,10 @@ export function MiaupediaApp() {
                 }
                 const synchronizedCat = { ...cat, photo: uploadedPhoto };
                 await saveCatRemote(user.id, synchronizedCat);
+                const birthday = nextReminders.find(item => item.catId === cat.id && item.type === "Cumpleaños");
+                const previousBirthday = reminders.find(item => item.catId === cat.id && item.type === "Cumpleaños");
+                if (birthday) await saveReminderRemote(birthday);
+                else if (previousBirthday) await deleteReminderRemote(previousBirthday.id);
                 setCats(current => current.map(item => item.id === synchronizedCat.id ? synchronizedCat : item));
                 flash("Perfil actualizado correctamente.");
             }
@@ -102,36 +144,78 @@ export function MiaupediaApp() {
         const normalized = { ...review, placeId: place.id };
         setUserReviews(editingReview ? userReviews.map(current => current.id === normalized.id ? normalized : current) : [...userReviews, normalized]);
         setEditor(null); setSelected(place);
-        if (user && createClient()) {
+        if (user && !deviceOnly) {
             try { await saveReviewRemote(user.id, normalized, { kind: "demo", id: place.id }); flash(editingReview ? "Reseña actualizada correctamente." : "Reseña publicada correctamente."); }
             catch { flash("Reseña guardada localmente; sincronización pendiente."); }
         } else flash(editingReview ? "Reseña actualizada correctamente." : "Reseña publicada correctamente.");
     };
-    const removeReview = async (id: string) => { setUserReviews(userReviews.filter(review => review.id !== id)); if (createClient()) await deleteReviewRemote(id); };
-    const removeReminder = async (id: string) => { setReminders(reminders.filter(reminder => reminder.id !== id)); if (createClient()) await deleteReminderRemote(id); flash("Recordatorio eliminado."); };
-    useEffect(() => { if (!user || !createClient())
-        return; cats.filter(c => c.id !== "demo-luna").forEach(c => void saveCatRemote(user.id, c).catch(() => undefined)); reminders.filter(r => r.catId !== "demo-luna").forEach(r => void saveReminderRemote(r).catch(() => undefined)); }, [cats, reminders, user]);
+    const removeReview = async (id: string) => { setUserReviews(userReviews.filter(review => review.id !== id)); if (!deviceOnly) await deleteReviewRemote(id); };
+    const persistReminder = async (reminder: Reminder) => {
+        try {
+            if (!deviceOnly) await saveReminderRemote(reminder);
+            setReminders(current => current.some(item => item.id === reminder.id)
+                ? current.map(item => item.id === reminder.id ? reminder : item)
+                : [...current, reminder]);
+            setEditor(null);
+            flash("Recordatorio guardado.");
+        } catch {
+            flash("No pudimos guardar el recordatorio.");
+        }
+    };
+    const removeReminder = async (id: string) => {
+        try {
+            if (!deviceOnly) await deleteReminderRemote(id);
+            setReminders(current => current.filter(reminder => reminder.id !== id));
+            flash("Recordatorio eliminado.");
+        } catch {
+            flash("No pudimos eliminar el recordatorio.");
+        }
+    };
+    const removeCat = async (id: string) => {
+        try {
+            if (!deviceOnly) await deleteCatRemote(id);
+            setCats(current => current.filter(cat => cat.id !== id));
+            setReminders(current => current.filter(reminder => reminder.catId !== id));
+        } catch {
+            flash("No pudimos eliminar el perfil.");
+        }
+    };
     if (!hydrated)
         return <div className="app-loading"><Logo /><span /></div>;
-    return <div className="app-shell"><header className="topbar"><button className="brand-button" onClick={() => navigate("Inicio")}><Logo /></button><nav className={`desktop-nav ${mobileOpen ? "mobile-open" : ""}`}>{(["Inicio", "Explorar", "Mi gato", "Agenda"] as Tab[]).map(x => <button key={x} className={tab === x ? "active" : ""} onClick={() => navigate(x)}>{x}</button>)}</nav><div className="header-actions"><button className="icon-button" onClick={() => flash(user ? "No tienes alertas nuevas" : "Inicia sesión para ver tus alertas")} aria-label="Alertas"><Bell /><span className="dot"/></button>{user ? <div className="account-menu"><button className="profile-pill"><span>{user.name.slice(0, 2).toUpperCase()}</span><b>{user.name}</b><ChevronDown /></button><div><button onClick={() => setShowOnboarding(true)}><Sparkles />Repetir onboarding</button><button onClick={signOut}><LogOut />Cerrar sesión</button></div></div> : <button className="login-button" onClick={() => setAuthOpen(true)}>Ingresar</button>}<button className="mobile-menu" onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <X /> : <Menu />}</button></div></header>
+    return <div className="app-shell"><header className="topbar"><button className="brand-button" onClick={() => navigate("Inicio")}><Logo /></button><nav className={`desktop-nav ${mobileOpen ? "mobile-open" : ""}`}>{(["Inicio", "Explorar", "Mi gato", "Agenda"] as Tab[]).map(x => <button key={x} className={tab === x ? "active" : ""} onClick={() => navigate(x)}>{x}</button>)}<Link href="/recomendaciones">Recomendaciones</Link></nav><div className="header-actions"><button className="icon-button" onClick={() => flash(user ? "No tienes alertas nuevas" : "Inicia sesión para ver tus alertas")} aria-label="Alertas"><Bell /><span className="dot"/></button>{user ? <div className="account-menu"><button className="profile-pill"><span>{user.name.slice(0, 2).toUpperCase()}</span><b>{user.name}</b><ChevronDown /></button><div><button onClick={() => setShowOnboarding(true)}><Sparkles />Repetir onboarding</button><button onClick={signOut}><LogOut />Cerrar sesión</button></div></div> : <button className="login-button" onClick={() => setAuthOpen(true)}>Ingresar</button>}<button className="mobile-menu" onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <X /> : <Menu />}</button></div></header>
 
-  <main>{tab === "Inicio" && user && cats.length ? <PersonalDashboard userName={user.name} cats={cats} reminders={reminders} saved={saved} userReviews={userReviews} onNavigate={navigate} onOpenPlace={setSelected} /> : tab === "Inicio" && <><section className="hero"><div className="hero-copy"><span className="eyebrow"><Sparkles /> La comunidad felina del Perú</span><h1>Mejores decisiones<br />para <em>tu gato.</em></h1><p>Descubre productos, servicios y veterinarias recomendadas por personas con gatos como el tuyo.</p><div className="search-box"><Search /><input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === "Enter" && navigate("Explorar")} placeholder="¿Qué estás buscando para tu gato?"/><button onClick={() => navigate("Explorar")}>Buscar</button></div><div className="popular"><span>Popular:</span>{["Veterinarias", "Arena", "Alimento", "Hoteles felinos"].map(x => <button key={x} onClick={() => { setQuery(x); navigate("Explorar"); }}>{x}</button>)}</div></div><div className="hero-visual"><div className="cat-photo"/><div className="floating-card score"><span><ShieldCheck /></span><div><b>4.9 de 5</b><small>Opiniones verificadas</small></div></div><div className="floating-card people"><div className="faces"><i>AM</i><i>JR</i><i>LC</i></div><div><b>+12 mil</b><small>cat lovers en Perú</small></div></div></div></section><div className="content-width home-disclaimer"><Disclaimer /></div>
+  <main>{switchWorkspace && <div className="content-width workspace-switch">
+    <p>{deviceOnly ? "Tus gatos y recordatorios siguen guardados en este navegador." : "Estás en el espacio de tu cuenta de Miaupedia."}</p>
+    <button type="button" className="primary" onClick={switchWorkspace}>{deviceOnly ? "Usar mi cuenta de Miaupedia" : "Ver mis datos de este navegador"}</button>
+  </div>}{tab === "Inicio" && user && cats.length ? <PersonalDashboard userName={user.name} cats={cats} reminders={reminders} saved={saved} userReviews={userReviews} onNavigate={navigate} onOpenPlace={setSelected} /> : tab === "Inicio" && <><section className="hero"><div className="hero-copy"><span className="eyebrow"><Sparkles /> La comunidad felina del Perú</span><h1>Mejores decisiones<br />para <em>tu gato.</em></h1><p>Descubre productos, servicios y veterinarias recomendadas por personas con gatos como el tuyo.</p><div className="search-box"><Search /><input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === "Enter" && navigate("Explorar")} placeholder="¿Qué estás buscando para tu gato?"/><button onClick={() => navigate("Explorar")}>Buscar</button></div><div className="popular"><span>Popular:</span>{["Veterinarias", "Arena", "Alimento", "Hoteles felinos"].map(x => <button key={x} onClick={() => { setQuery(x); navigate("Explorar"); }}>{x}</button>)}</div></div><div className="hero-visual"><div className="cat-photo"/><div className="floating-card score"><span><ShieldCheck /></span><div><b>4.9 de 5</b><small>Opiniones verificadas</small></div></div><div className="floating-card people"><div className="faces"><i>AM</i><i>JR</i><i>LC</i></div><div><b>+12 mil</b><small>cat lovers en Perú</small></div></div></div></section><div className="content-width home-disclaimer"><Disclaimer /></div>
     <section className="quick-section content-width"><div className="section-heading"><div><span className="kicker">EXPLORA MIAUPEDIA</span><h2>Todo lo que tu gato necesita</h2></div><button onClick={() => navigate("Explorar")}>Ver todo <ChevronRight /></button></div><div className="category-grid">{[["Veterinaria", "Especialistas cerca de ti", "🏥", "lilac"], ["Pet Shop", "Todo para consentirlo", "🛍️", "mint"], ["Producto", "Probados por la comunidad", "📦", "peach"], ["Hotel felino", "Un segundo hogar", "🏡", "blue"], ["Cuidador", "Personas de confianza", "🤝", "yellow"]].map(([a, b, c, d]) => <button className="category-card" key={a} onClick={() => { setCategory(a); navigate("Explorar"); }}><span className={d}>{c}</span><div><b>{a}</b><small>{b}</small></div><ChevronRight /></button>)}</div></section>
     <section className="recommend-section"><div className="content-width"><div className="section-heading"><div><span className="kicker">RECOMENDADOS PARA TI</span><h2>Los favoritos de la comunidad</h2></div><button onClick={() => navigate("Explorar")}>Explorar todos <ChevronRight /></button></div><div className="card-grid">{places.slice(0, 3).map(p => <PlaceCard key={p.id} place={p} saved={saved.includes(p.id)} onSave={() => toggleSaved(p.id)} onOpen={() => setSelected(p)} onCompare={() => addCompare(p.id)}/>)}</div></div></section>
     <section className="trust-band"><div className="content-width"><div><span className="trust-icon"><ShieldCheck /></span><div><h2>Experiencias reales.<br />Decisiones con confianza.</h2><p>La comunidad destaca las voces más útiles, no el contenido patrocinado.</p></div></div><div className="trust-stats"><span><b>12K+</b><small>Miembros</small></span><span><b>8.5K</b><small>Reseñas</small></span><span><b>1.2K</b><small>Opciones</small></span></div></div></section></>}
 
   {tab === "Explorar" && <section className="page content-width"><div className="page-title"><span className="kicker">DIRECTORIO FELINO</span><h1>Encuentra lo mejor para tu gato</h1><p>Opiniones reales de la comunidad peruana.</p></div><Disclaimer /><SafetyNotice /><CatalogSuggestions /><div className="explore-search"><Search /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Busca por nombre, categoría o distrito"/><button onClick={() => setShowFilters(!showFilters)}><SlidersHorizontal />Filtros</button></div>{showFilters && <div className="filter-panel"><label>Distrito<select value={district} onChange={e => setDistrict(e.target.value)}><option>Todos</option><option>Miraflores</option><option>Surco</option><option>San Borja</option><option>Barranco</option></select></label><label>Categoría<select value={category} onChange={e => setCategory(e.target.value)}><option>Todos</option><option>Veterinaria</option><option>Pet Shop</option><option>Hotel felino</option><option>Cuidador</option><option>Producto</option></select></label><label>Ubicación<input disabled value="Lima, Perú"/></label></div>}<div className="chips">{["Todos", "Veterinaria", "Pet Shop", "Producto", "Hotel felino", "Cuidador"].map(c => <button key={c} className={category === c ? "active" : ""} onClick={() => setCategory(c)}>{c}</button>)}</div><div className="result-line"><b>{results.length} resultados</b><span>Ordenar: mejor valorados <ChevronDown /></span></div><div className="card-grid explore-grid">{results.map(p => <PlaceCard key={p.id} place={p} saved={saved.includes(p.id)} onSave={() => toggleSaved(p.id)} onOpen={() => setSelected(p)} onCompare={() => addCompare(p.id)}/>)}</div>{!results.length && <div className="empty"><Search /><h3>No encontramos coincidencias</h3><p>Prueba otra búsqueda o limpia los filtros.</p><button onClick={() => { setQuery(""); setCategory("Todos"); setDistrict("Todos"); }}>Limpiar filtros</button></div>}{compare.length > 0 && <div className="compare-bar"><div><b>{compare.length} producto{compare.length > 1 ? "s" : ""}</b><small>Seleccionados para comparar</small></div><div className="mini-products">{compare.map(id => <span key={id} style={{ backgroundImage: `url(${places.find(p => p.id === id)?.image})` }}><button onClick={() => addCompare(id)}><X /></button></span>)}</div><button onClick={() => setEditor("compare")}>Comparar ahora</button></div>}</section>}
 
-  {tab === "Mi gato" && <section className="page content-width"><div className="page-title row-title"><div><span className="kicker">MI FAMILIA FELINA</span><h1>Mis gatos</h1><p>Perfiles que personalizan tus descubrimientos.</p></div><button className="primary" onClick={() => requireUser(() => { setEditingCat(null); setEditor("cat"); })}><Plus />Añadir gato</button></div>{!user ? <LockedState onLogin={() => setAuthOpen(true)}/> : !cats.length ? <div className="empty"><Cat /><h3>Aún no has registrado ningún gato.</h3><p>Añade su perfil para personalizar tu experiencia.</p><button onClick={() => setEditor("cat")}>Añadir gato</button></div> : <><div className="cat-tabs">{cats.map(c => <button className={c.id === primaryCat.id ? "active" : ""} key={c.id}>{c.name}</button>)}</div><div className="cat-profile"><div className="cat-avatar" style={{ backgroundImage: `url(${primaryCat.photo || "https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&w=700&q=80"})` }}/><div className="cat-info"><div><span>Perfil completo {profileCompletion(primaryCat)}%</span><h2>{primaryCat.name}</h2><p>{primaryCat.breed} · {primaryCat.sex} · {calculateAge(primaryCat.birthDate).label}</p></div><div className="inline-actions"><button onClick={() => { setEditingCat(primaryCat); setEditor("cat"); }}><Pencil />Editar</button><button className="danger" onClick={() => confirm(`¿Eliminar el perfil de ${primaryCat.name}?`) && setCats(cats.filter(c => c.id !== primaryCat.id))}><Trash2 /></button></div><div className="profile-progress"><i style={{ width: `${profileCompletion(primaryCat)}%` }}/></div><div className="cat-stats"><span><b>{primaryCat.weight || "—"} kg</b><small>Peso</small></span><span><b>{primaryCat.sterilized ? "Sí" : "No"}</b><small>Esterilizado</small></span><span><b>{saved.length}</b><small>Seguidos</small></span></div></div></div><ProfileCompletion cat={primaryCat} onComplete={() => { setEditingCat(primaryCat); setEditor("cat"); }} /><CatReportActions cat={primaryCat} reminders={reminders.filter(r => r.catId === primaryCat.id)} /><UpcomingEvents reminders={reminders.filter(r => r.catId === primaryCat.id)} /><Disclaimer /><div className="profile-columns"><div className="panel"><div className="panel-head"><h3>Sus preferencias</h3><button onClick={() => { setEditingCat(primaryCat); setEditor("cat"); }}>Editar</button></div>{[["🍗", "Alimentos", primaryCat.food], ["✨", "Arenas", primaryCat.litter], ["🧶", "Juguetes", primaryCat.toys]].map(([icon, label, values]) => <div className="preference" key={String(label)}><span>{String(icon)}</span><div><small>{String(label)}</small><b>{(values as string[]).join(", ") || "Sin preferencias"}</b></div></div>)}</div><SimilarCatsPanel cat={primaryCat} /></div></>}</section>}
+  {tab === "Mi gato" && <section className="page content-width"><div className="page-title row-title"><div><span className="kicker">MI FAMILIA FELINA</span><h1>Mis gatos</h1><p>Perfiles que personalizan tus descubrimientos.</p></div><button className="primary" onClick={() => requireUser(() => { setEditingCat(null); setEditor("cat"); })}><Plus />Añadir gato</button></div>{!user ? <LockedState onLogin={() => setAuthOpen(true)}/> : !cats.length ? <div className="empty"><Cat /><h3>Aún no has registrado ningún gato.</h3><p>Añade su perfil para personalizar tu experiencia.</p><button onClick={() => setEditor("cat")}>Añadir gato</button></div> : <><div className="cat-tabs">{cats.map(c => <button className={c.id === primaryCat.id ? "active" : ""} key={c.id}>{c.name}</button>)}</div><div className="cat-profile"><div className="cat-avatar" style={{ backgroundImage: `url(${primaryCat.photo || "https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&w=700&q=80"})` }}/><div className="cat-info"><div><span>Perfil completo {profileCompletion(primaryCat)}%</span><h2>{primaryCat.name}</h2><p>{primaryCat.breed} · {primaryCat.sex} · {calculateAge(primaryCat.birthDate).label}</p></div><div className="inline-actions"><button onClick={() => { setEditingCat(primaryCat); setEditor("cat"); }}><Pencil />Editar</button><button className="danger" onClick={() => confirm(`¿Eliminar el perfil de ${primaryCat.name}?`) && void removeCat(primaryCat.id)}><Trash2 /></button></div><div className="profile-progress"><i style={{ width: `${profileCompletion(primaryCat)}%` }}/></div><div className="cat-stats"><span><b>{primaryCat.weight || "—"} kg</b><small>Peso</small></span><span><b>{primaryCat.sterilized ? "Sí" : "No"}</b><small>Esterilizado</small></span><span><b>{saved.length}</b><small>Seguidos</small></span></div></div></div><ProfileCompletion cat={primaryCat} onComplete={() => { setEditingCat(primaryCat); setEditor("cat"); }} /><CatReportActions cat={primaryCat} reminders={reminders.filter(r => r.catId === primaryCat.id)} /><UpcomingEvents reminders={reminders.filter(r => r.catId === primaryCat.id)} /><Disclaimer /><div className="profile-columns"><div className="panel"><div className="panel-head"><h3>Sus preferencias</h3><button onClick={() => { setEditingCat(primaryCat); setEditor("cat"); }}>Editar</button></div>{[["🍗", "Alimentos", primaryCat.food], ["✨", "Arenas", primaryCat.litter], ["🧶", "Juguetes", primaryCat.toys]].map(([icon, label, values]) => <div className="preference" key={String(label)}><span>{String(icon)}</span><div><small>{String(label)}</small><b>{(values as string[]).join(", ") || "Sin preferencias"}</b></div></div>)}</div><SimilarCatsPanel cat={primaryCat} /></div></>}</section>}
 
-  {tab === "Agenda" && <section className="page content-width"><div className="page-title row-title"><div><span className="kicker">CUIDADOS AL DÍA</span><h1>Agenda{primaryCat ? ` de ${primaryCat.name}` : ""}</h1><p>Recordatorios sencillos para que nada se te pase.</p></div><button className="primary" onClick={() => requireUser(() => setEditor("reminder"))}><Plus />Nuevo recordatorio</button></div>{!user ? <LockedState onLogin={() => setAuthOpen(true)}/> : !reminders.length ? <div className="empty"><CalendarDays /><h3>No tienes recordatorios todavía</h3><p>Añade cumpleaños, vacunas o desparasitaciones.</p><button onClick={() => setEditor("reminder")}>Crear recordatorio</button></div> : <div className="agenda-layout"><div className="agenda-main"><h3>Próximos</h3>{[...reminders].sort((a, b) => a.date.localeCompare(b.date)).map(r => { const d = new Date(`${r.date}T12:00:00`); return <div className={`event ${r.completed ? "completed" : ""}`} key={r.id}><div className={`date ${r.type === "Vacuna" ? "violet" : r.type === "Cumpleaños" ? "peach" : ""}`}><b>{String(d.getDate()).padStart(2, "0")}</b><small>{d.toLocaleDateString("es-PE", { month: "short" }).toUpperCase()}</small></div><div><b>{r.description}</b><span>{r.type} · {cats.find(c => c.id === r.catId)?.name || "Mi gato"}</span></div><button className="event-done" onClick={() => setReminders(reminders.map(x => x.id === r.id ? { ...x, completed: !x.completed } : x))}>{r.completed ? "Reabrir" : "Completar"}</button><button className="event-delete" onClick={() => confirm("¿Eliminar este recordatorio?") && setReminders(reminders.filter(x => x.id !== r.id))}><Trash2 /></button></div>; })}</div><aside className="panel calendar-panel"><div className="panel-head"><h3>Resumen</h3><span>{reminders.filter(r => !r.completed).length} pendientes</span></div><div className="agenda-summary"><CalendarDays /><b>{reminders.filter(r => !r.completed).length}</b><p>recordatorios activos</p></div></aside></div>}<Disclaimer /></section>}</main>
+  {tab === "Agenda" && <section className="page content-width"><div className="page-title row-title"><div><span className="kicker">CUIDADOS AL DÍA</span><h1>Agenda{primaryCat ? ` de ${primaryCat.name}` : ""}</h1><p>Recordatorios sencillos para que nada se te pase.</p></div><button className="primary" onClick={() => requireUser(() => cats.length ? setEditor("reminder") : navigate("Mi gato"))}><Plus />Nuevo recordatorio</button></div>{!user ? <LockedState onLogin={() => setAuthOpen(true)}/> : !reminders.length ? <div className="empty"><CalendarDays /><h3>No tienes recordatorios todavía</h3><p>Añade cumpleaños, vacunas o desparasitaciones.</p><button onClick={() => cats.length ? setEditor("reminder") : navigate("Mi gato")}>Crear recordatorio</button></div> : <div className="agenda-layout"><div className="agenda-main"><h3>Próximos</h3>{[...reminders].sort((a, b) => a.date.localeCompare(b.date)).map(r => { const d = new Date(`${r.date}T12:00:00`); return <div className={`event ${r.completed ? "completed" : ""}`} key={r.id}><div className={`date ${r.type === "Vacuna" ? "violet" : r.type === "Cumpleaños" ? "peach" : ""}`}><b>{String(d.getDate()).padStart(2, "0")}</b><small>{d.toLocaleDateString("es-PE", { month: "short" }).toUpperCase()}</small></div><div><b>{r.description}</b><span>{r.type} · {cats.find(c => c.id === r.catId)?.name || "Mi gato"}</span></div><button className="event-done" onClick={() => void persistReminder({ ...r, completed: !r.completed })}>{r.completed ? "Reabrir" : "Completar"}</button><button className="event-delete" onClick={() => confirm("¿Eliminar este recordatorio?") && void removeReminder(r.id)}><Trash2 /></button></div>; })}</div><aside className="panel calendar-panel"><div className="panel-head"><h3>Resumen</h3><span>{reminders.filter(r => !r.completed).length} pendientes</span></div><div className="agenda-summary"><CalendarDays /><b>{reminders.filter(r => !r.completed).length}</b><p>recordatorios activos</p></div></aside></div>}<Disclaimer /></section>}</main>
 
   <footer><div className="content-width"><Logo /><p>Miaupedia es una plataforma de información y experiencias compartidas por la comunidad. No reemplaza la atención veterinaria profesional ni proporciona diagnósticos, tratamientos o recomendaciones médicas.</p><span>Hecho para los gatos del Perú 🇵🇪</span></div></footer><nav className="bottom-nav">{[["Inicio", Home], ["Explorar", Search], ["Mi gato", Cat], ["Agenda", CalendarDays]].map(([name, Icon]) => { const I = Icon as typeof Home; return <button key={String(name)} className={tab === name ? "active" : ""} onClick={() => navigate(name as Tab)}><I /><span>{String(name)}</span></button>; })}<button onClick={() => flash("No tienes alertas nuevas")}><Bell /><span>Alertas</span></button></nav>
 
   {selected && <DetailModal place={selected} saved={saved.includes(selected.id)} ownReviews={userReviews.filter(r => r.placeId === selected.id)} onClose={() => setSelected(null)} onSave={() => toggleSaved(selected.id)} onContact={() => requireUser(() => { setUserReviews(userReviews.map(r => r.placeId === selected.id ? { ...r, status: "En conversaci\u00f3n" } : r)); flash("Conversaci\u00f3n privada solicitada; la rese\u00f1a sigue visible"); })} onNewReview={() => requireUser(() => { const existing = userReviews.find(r => r.placeId === selected.id); setEditingReview(existing || null); setEditor("review"); })} onEdit={r => { setEditingReview(r); setEditor("review"); }} onDelete={id => void removeReview(id)} onReact={(id, key) => setUserReviews(userReviews.map(r => r.id === id ? { ...r, [key]: r[key] + 1 } : r))} onReport={id => setUserReviews(userReviews.map(r => r.id === id ? { ...r, reported: true, status: "En revisión" } : r))} onBusinessResponse={(id, response) => setUserReviews(userReviews.map(r => r.id === id ? { ...r, businessResponse: response } : r))}/>} 
-  {authOpen && <AuthModal onClose={() => setAuthOpen(false)} onAuthenticated={u => { setUser(u); setAuthOpen(false); if (!onboarded)
-        setShowOnboarding(true); }}/>}{showOnboarding && <Onboarding onSkip={() => { setOnboarded(true); setShowOnboarding(false); }} onFinish={(cat, interests) => { if (cat) { setCats([cat, ...cats.filter(c => c.id !== "demo-luna")]); setReminders(syncBirthdayReminder(cat, reminders)); } setSaved(Array.from(new Set([...saved, ...interests]))); setOnboarded(true); setShowOnboarding(false); flash("Tu perfil quedó listo"); }}/>}
-  {editor === "cat" && <CatEditor initial={editingCat} onClose={() => setEditor(null)} onSave={cat => void saveCatProfile(cat)}/>}{editor === "reminder" && <ReminderEditor cats={cats} onClose={() => setEditor(null)} onSave={r => { setReminders([...reminders, r]); setEditor(null); flash("Recordatorio creado"); }}/>}{editor === "review" && selected && <ReviewEditor initial={editingReview} onClose={() => setEditor(null)} onSave={review => void persistReview(review, selected)}/>}{editor === "compare" && <CompareModal ids={compare} onClose={() => setEditor(null)}/>} {notice && <div className="toast"><Check />{notice}</div>}</div>;
+  {authOpen && <AuthModal deviceOnly={deviceOnly} onClose={() => setAuthOpen(false)} onAuthenticated={u => {
+        setAuthOpen(false);
+        if (deviceOnly) {
+            setUser(u);
+            if (!onboarded) setShowOnboarding(true);
+        }
+    }}/>}{showOnboarding && <Onboarding onSkip={() => { setOnboarded(true); setShowOnboarding(false); }} onFinish={(cat, interests) => {
+        if (cat) void saveCatProfile(cat);
+        setSaved(Array.from(new Set([...saved, ...interests])));
+        setOnboarded(true);
+        setShowOnboarding(false);
+    }}/>}
+  {editor === "cat" && <CatEditor initial={editingCat} onClose={() => setEditor(null)} onSave={cat => void saveCatProfile(cat)}/>}
+  {editor === "reminder" && <ReminderEditor cats={cats} onClose={() => setEditor(null)} onSave={r => void persistReminder(r)}/>}
+  {editor === "review" && selected && <ReviewEditor initial={editingReview} onClose={() => setEditor(null)} onSave={review => void persistReview(review, selected)}/>}{editor === "compare" && <CompareModal ids={compare} onClose={() => setEditor(null)}/>} {notice && <div className="toast"><Check />{notice}</div>}</div>;
 }
 function FormShell({ title, onClose, children }: {
     title: string;

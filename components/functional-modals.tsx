@@ -9,10 +9,12 @@ export type DemoUser = {
     name: string;
     email: string;
 };
-export function AuthModal({ onClose, onAuthenticated }: {
+export function AuthModal({ onClose, onAuthenticated, deviceOnly = false }: {
     onClose: () => void;
     onAuthenticated: (user: DemoUser) => void;
+    deviceOnly?: boolean;
 }) {
+    const emailSelfService = deviceOnly || !createClient() || process.env.NEXT_PUBLIC_AUTH_EMAIL_ENABLED === "true";
     const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -25,17 +27,21 @@ export function AuthModal({ onClose, onAuthenticated }: {
         const email = String(form.get("email") || "").trim();
         const password = String(form.get("password") || "");
         const name = String(form.get("name") || email.split("@")[0]);
-        const supabase = createClient();
+        const supabase = deviceOnly ? null : createClient();
         try {
             if (mode === "reset") {
-                if (supabase)
-                    await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/actualizar-clave` });
+                if (supabase) {
+                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                        redirectTo: `${location.origin}/actualizar-clave`,
+                    });
+                    if (error) throw error;
+                }
                 setMessage("Si la cuenta existe, recibirás un enlace para recuperar tu contraseña.");
                 return;
             }
             if (supabase) {
                 const result = mode === "signup"
-                    ? await supabase.auth.signUp({ email, password, options: { data: { display_name: name } } })
+                    ? await supabase.auth.signUp({ email, password, options: { data: { display_name: name }, emailRedirectTo: location.origin } })
                     : await supabase.auth.signInWithPassword({ email, password });
                 if (result.error)
                     throw result.error;
@@ -65,12 +71,12 @@ export function AuthModal({ onClose, onAuthenticated }: {
         {mode === "signup" && <label>Nombre <span><Cat size={17}/><input name="name" required autoComplete="name" placeholder="Tu nombre"/></span></label>}
         <label>Correo electrónico <span><Mail size={17}/><input name="email" required type="email" autoComplete="email" placeholder="tu@correo.com"/></span></label>
         {mode !== "reset" && <label>Contraseña <span><LockKeyhole size={17}/><input name="password" required minLength={8} type={showPassword ? "text" : "password"} autoComplete={mode === "login" ? "current-password" : "new-password"} placeholder="Mínimo 8 caracteres"/><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label="Mostrar contraseña">{showPassword ? <EyeOff /> : <Eye />}</button></span></label>}
-        {mode === "login" && <button type="button" className="text-link" onClick={() => setMode("reset")}>Olvidé mi contraseña</button>}
+        {emailSelfService && mode === "login" && <button type="button" className="text-link" onClick={() => setMode("reset")}>Olvidé mi contraseña</button>}
         {message && <p className="form-message">{message}</p>}
         <button className="primary full" disabled={loading}>{loading ? "Procesando…" : mode === "login" ? "Iniciar sesión" : mode === "signup" ? "Crear mi cuenta" : "Enviar enlace"}</button>
       </form>
-      <p className="auth-switch">{mode === "login" ? <>¿Primera vez? <button onClick={() => setMode("signup")}>Crea una cuenta</button></> : <button onClick={() => setMode("login")}><ArrowLeft size={14}/> Volver a iniciar sesión</button>}</p>
-      {!createClient() && <span className="demo-mode"><ShieldCheck size={14}/> Modo demo local: los datos quedan en este navegador</span>}
+      <p className="auth-switch">{!emailSelfService ? "Acceso para cuentas habilitadas." : mode === "login" ? <>¿Primera vez? <button onClick={() => setMode("signup")}>Crea una cuenta</button></> : <button onClick={() => setMode("login")}><ArrowLeft size={14}/> Volver a iniciar sesión</button>}</p>
+      {(deviceOnly || !createClient()) && <span className="demo-mode"><ShieldCheck size={14}/> Modo demo local: los datos quedan en este navegador</span>}
     </div>
   </div>;
 }

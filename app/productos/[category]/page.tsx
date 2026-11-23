@@ -1,4 +1,8 @@
-import type { Metadata } from "next";
-import { MiaupediaApp } from "@/components/miaupedia-app";
-export async function generateMetadata({params}:{params:Promise<{category:string}>}):Promise<Metadata>{const {category}=await params;return{title:`Productos para gatos: ${category} | Miaupedia`,description:`Compara ${category} para gatos según experiencias de la comunidad peruana.`}}
-export default function ProductCategoryPage(){return <MiaupediaApp/>}
+import { redirect } from "next/navigation";
+import { parseCategory } from "@/lib/product-catalog";
+
+export default async function ProductCategoryPage({ params }: { params: Promise<{ category: string }> }) {
+  const { category } = await params;
+  const filter = parseCategory(category);
+  redirect(filter ? `/recomendaciones?categoria=${filter}` : "/recomendaciones");
+}
