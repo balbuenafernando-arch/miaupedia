@@ -25,3 +25,16 @@
 @media (max-width: 900px) {
   .desktop-nav.mobile-open a { padding: 13px; }
 }
+
+.workspace-switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--cream);
+  border-radius: 12px;
+}
+.workspace-switch p { margin: 0; }

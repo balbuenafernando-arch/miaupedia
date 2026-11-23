@@ -29,6 +29,12 @@ Para publicar un producto, abre **Supabase → Table Editor → products → Ins
 
 Para moderar una reseña pendiente, filtra `reviews` por `product_id` y `moderation_state = pending`. Cambia `moderation_state` a `approved` y `estado` a `Publicada` para hacerla visible, o cambia `moderation_state` a `rejected` para mantenerla fuera de la ficha.
 
+## Datos guardados en este navegador
+
+Los perfiles y recordatorios de la versión demo permanecen en el navegador donde se crearon. **Usar mi cuenta de Miaupedia** abre un espacio separado, con perfiles y agenda sincronizados para esa cuenta. **Ver mis datos de este navegador** vuelve al espacio anterior.
+
+En producción, el inicio de sesión admite cuentas habilitadas por un administrador. Activa el registro y la recuperación de autoservicio solo cuando Supabase tenga un servicio de correo público configurado y verificado. Para mostrarlos en la aplicación, define `NEXT_PUBLIC_AUTH_EMAIL_ENABLED=true` y vuelve a desplegar.
+
 ## Verificación
 
 ```bash
