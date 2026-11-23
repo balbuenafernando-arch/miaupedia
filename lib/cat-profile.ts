@@ -17,7 +17,7 @@ export function profileCompletion(cat:CatProfile){const total=6;return Math.roun
 
 export function syncBirthdayReminder(cat:CatProfile, reminders:Reminder[]):Reminder[]{
   const others=reminders.filter(r=>!(r.catId===cat.id&&r.type==="Cumpleaños")); if(!cat.birthDate)return others;
-  const birth=new Date(`${cat.birthDate}T12:00:00`),now=new Date(); let year=now.getFullYear(); let next=new Date(year,birth.getMonth(),birth.getDate()); if(next<new Date(now.getFullYear(),now.getMonth(),now.getDate()))year++;
+  const birth=new Date(`${cat.birthDate}T12:00:00`),now=new Date(); let year=now.getFullYear(); const next=new Date(year,birth.getMonth(),birth.getDate()); if(next<new Date(now.getFullYear(),now.getMonth(),now.getDate()))year++;
   const birthday:Reminder={id:`birthday-${cat.id}`,catId:cat.id,type:"Cumpleaños",date:`${year}-${String(birth.getMonth()+1).padStart(2,"0")}-${String(birth.getDate()).padStart(2,"0")}`,description:`Cumpleaños de ${cat.name}`,completed:false};
   return [...others,birthday];
 }

@@ -21,10 +21,20 @@ Abre `http://localhost:3000`. Sin credenciales Supabase, la aplicación entra en
 
 Con Supabase configurado, el registro, login, recuperación, sesión y sincronización de perfiles/agenda usan el backend real y sus políticas RLS.
 
+## Recomendaciones
+
+Aplica [la migración de Recomendaciones](supabase/migrations/20261123231604_product_recommendations.sql) en el entorno Supabase que vayas a usar. En un proyecto nuevo, ejecuta primero el esquema base y las migraciones previas en orden. El catálogo usa las filas existentes de `products` y las reseñas de `reviews` asociadas por `product_id`.
+
+Para publicar un producto, abre **Supabase → Table Editor → products → Insert row**. Completa `nombre`, un `slug` único y la `categoria`. Usa un slug con letras minúsculas, números y guiones para que la ficha tenga una URL estable. Puedes completar `descripcion`, `imagen` con una URL HTTPS y `precio_referencia` en soles. Los juguetes, rascadores, transportadoras y fuentes de agua aparecen también con el filtro **Accesorios**. La ficha queda visible al guardar la fila.
+
+Para moderar una reseña pendiente, filtra `reviews` por `product_id` y `moderation_state = pending`. Cambia `moderation_state` a `approved` y `estado` a `Publicada` para hacerla visible, o cambia `moderation_state` a `rejected` para mantenerla fuera de la ficha.
+
 ## Verificación
 
 ```bash
+npm run lint
 npm run build
+npx tsc --noEmit
 ```
 
 Documentos de entrega:
