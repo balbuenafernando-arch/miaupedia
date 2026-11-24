@@ -23,9 +23,13 @@ Con Supabase configurado, el registro, login, recuperación, sesión y sincroniz
 
 ## Recomendaciones
 
-Aplica [la migración de Recomendaciones](supabase/migrations/20261123231604_product_recommendations.sql) en el entorno Supabase que vayas a usar. En un proyecto nuevo, ejecuta primero el esquema base y las migraciones previas en orden. El catálogo usa las filas existentes de `products` y las reseñas de `reviews` asociadas por `product_id`.
+Aplica [la migración de Recomendaciones](supabase/migrations/20261123231604_product_recommendations.sql) en el entorno Supabase que vayas a usar. En un proyecto nuevo, ejecuta el esquema base y todas las migraciones en orden. El catálogo usa las filas existentes de `products` y las reseñas de `reviews` asociadas por `product_id`.
 
 Para publicar un producto, abre **Supabase → Table Editor → products → Insert row**. Completa `nombre`, un `slug` único y la `categoria`. Usa un slug con letras minúsculas, números y guiones para que la ficha tenga una URL estable. Puedes completar `descripcion`, `imagen` con una URL HTTPS y `precio_referencia` en soles. Los juguetes, rascadores, transportadoras y fuentes de agua aparecen también con el filtro **Accesorios**. La ficha queda visible al guardar la fila con `publicado` activo. Desactiva ese campo para retirarla del catálogo sin perder la ficha ni sus reseñas.
+
+Los usuarios con cuenta pueden usar **Proponer una ficha**. La propuesta queda en `products` con `publicado=false` y el catálogo público sigue mostrando solo fichas aprobadas. Para moderarla, busca las filas con `propuesto_por` en **Table Editor → products**. Revisa nombre, categoría y descripción antes de activar `publicado`. El nombre normalizado y la categoría evitan propuestas repetidas, incluso cuando una ficha todavía está en revisión.
+
+Cada cuenta puede valorar una vez por producto. La calificación de 1 a 5 es obligatoria. Los motivos y el comentario son opcionales. Se conservan las reseñas y los campos de ventajas y desventajas que ya existían.
 
 Para moderar una reseña pendiente, filtra `reviews` por `product_id` y `moderation_state = pending`. Cambia `moderation_state` a `approved` y `estado` a `Publicada` para hacerla visible, o cambia `moderation_state` a `rejected` para mantenerla fuera de la ficha.
 

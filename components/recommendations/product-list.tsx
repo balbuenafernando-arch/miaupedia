@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useState, type FormEvent } from "react";
 import { catalogConfigured, categoryLabels, listProducts, parseCategory, type CategoryFilter } from "@/lib/product-catalog";
 import { LoadError, Pagination, ProductImage } from "./catalog-ui";
+import { ProductProposal } from "./product-proposal";
 import { useCatalogResource } from "./use-catalog-resource";
 
 export function ProductList({ initialCategory }: { initialCategory: CategoryFilter | "" }) {
@@ -13,7 +14,7 @@ export function ProductList({ initialCategory }: { initialCategory: CategoryFilt
       <p>Encuentra productos y lee las experiencias de la comunidad.</p>
     </div>
     {catalogConfigured
-      ? <CatalogSearch key={initialCategory} initialCategory={initialCategory} />
+      ? <><ProductProposal /><CatalogSearch key={initialCategory} initialCategory={initialCategory} /></>
       : <p className="catalog-panel" role="status">El catálogo todavía no está disponible.</p>}
   </section>;
 }

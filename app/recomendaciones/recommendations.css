@@ -79,3 +79,40 @@
 @media (max-width: 600px) {
   .catalog-detail, .catalog-search { grid-template-columns: 1fr; }
 }
+
+.catalog-proposal { margin-bottom: 18px; }
+.catalog-proposal h2, .catalog-proposal p { margin: 0; }
+.catalog-proposal-actions, .catalog-choices, .catalog-review-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.catalog-proposal-actions button:not(.primary) {
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+}
+.catalog-choice-group {
+  border: 0;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+}
+.catalog-choice-group legend { margin-bottom: 6px; font-weight: 700; }
+.catalog-choices label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.catalog-choices input { width: auto; margin: 0; accent-color: var(--green); }
+.catalog-choices label:has(input:checked) { background: var(--cream); border-color: var(--green); }
+.catalog-review-reasons { padding: 0; list-style: none; }
+.catalog-review-reasons li { background: var(--cream); padding: 4px 8px; border-radius: 6px; }

@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { AuthModal } from "@/components/functional-modals";
-import { createClient } from "@/lib/supabase";
-import { catalogConfigured, findProduct, listProductReviews } from "@/lib/product-catalog";
+import { catalogConfigured, findProduct, listProductReviews, reviewReasons } from "@/lib/product-catalog";
 import { LoadError, Pagination, ProductImage } from "./catalog-ui";
 import { ProductReviewForm } from "./product-review-form";
+import { useCatalogAccount } from "./use-catalog-account";
 import { useCatalogResource } from "./use-catalog-resource";
 
 const price = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" });
@@ -44,7 +44,7 @@ function ProductListing({ slug }: { slug: string }) {
 }
 
 function ProductReviews({ productId }: { productId: string }) {
-  const [userId, setUserId] = useState<string | null | undefined>(undefined);
+  const userId = useCatalogAccount();
   const [authOpen, setAuthOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [page, setPage] = useState(0);
@@ -53,15 +53,6 @@ function ProductReviews({ productId }: { productId: string }) {
     [productId, page],
   );
   const { resource, refresh } = useCatalogResource(load);
-
-  useEffect(() => {
-    const client = createClient();
-    if (!client) return;
-    const { data } = client.auth.onAuthStateChange((_event, session) => {
-      setUserId(session && !session.user.is_anonymous ? session.user.id : null);
-    });
-    return () => data.subscription.unsubscribe();
-  }, []);
 
   return <section className="catalog-reviews">
     <h2>Reseñas de la comunidad</h2>
@@ -74,7 +65,10 @@ function ProductReviews({ productId }: { productId: string }) {
             <strong className="stars">★ {review.puntuacion} de 5</strong>
             <time dateTime={review.created_at}>{date.format(new Date(review.created_at))}</time>
           </div>
-          <p>{review.comentario}</p>
+          {review.motivos.length > 0 && <ul className="catalog-review-reasons" aria-label="Motivos de la valoración">
+            {review.motivos.map(reason => <li key={reason}>{reviewReasons[reason]}</li>)}
+          </ul>}
+          {review.comentario && <p>{review.comentario}</p>}
           {(review.ventajas || review.desventajas) && <dl>
             {review.ventajas && <><dt>Ventajas</dt><dd>{review.ventajas}</dd></>}
             {review.desventajas && <><dt>Desventajas</dt><dd>{review.desventajas}</dd></>}
