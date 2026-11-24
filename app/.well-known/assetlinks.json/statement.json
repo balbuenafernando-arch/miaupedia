@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "pe.balbuenalabs.miaupedia",
+      "sha256_cert_fingerprints": [
+        "59:AE:68:E1:B1:4A:66:43:F4:9D:D0:3A:5C:82:71:12:38:A1:60:4B:AB:5E:31:88:1F:D6:54:18:8F:FC:20:27"
+      ]
+    }
+  }
+]
