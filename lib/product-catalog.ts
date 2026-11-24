@@ -35,14 +35,27 @@ export type Product = {
 export type ProductReview = {
   id: string;
   puntuacion: number;
-  comentario: string;
+  comentario: string | null;
+  motivos: ReviewReason[];
   ventajas: string | null;
   desventajas: string | null;
   created_at: string;
 };
 
+export const reviewReasons = {
+  calidad: "Calidad",
+  precio: "Relación calidad-precio",
+  aceptacion: "Aceptación por mi gato",
+  facilidad: "Facilidad de uso",
+  duracion: "Duración",
+  otro: "Otro motivo",
+} as const;
+
+export type ReviewReason = keyof typeof reviewReasons;
+export const reviewReasonKeys = Object.keys(reviewReasons) as ReviewReason[];
+
 const productColumns = "id,slug,nombre,categoria,descripcion,imagen,precio_referencia";
-const reviewColumns = "id,puntuacion,comentario,ventajas,desventajas,created_at";
+const reviewColumns = "id,puntuacion,comentario,motivos,ventajas,desventajas,created_at";
 export const catalogConfigured = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
 );
@@ -91,27 +104,49 @@ export type ReviewDraft = {
   id: string;
   rating: number;
   comment: string;
-  pros: string;
-  cons: string;
+  reasons: ReviewReason[];
   pending: boolean;
 };
 
-export async function submitProductReview(productId: string, expectedUserId: string, draft: ReviewDraft) {
+async function signedInAccount(expectedUserId: string) {
   const db = database();
-  const { data, error: authError } = await db.auth.getUser();
-  if (authError || !data.user || data.user.is_anonymous || data.user.id !== expectedUserId) {
-    throw new Error("Inicia sesión con tu cuenta para publicar la reseña.");
+  const { data, error } = await db.auth.getUser();
+  if (error || !data.user || data.user.is_anonymous || data.user.id !== expectedUserId) {
+    throw new Error("Inicia sesión con tu cuenta para continuar.");
   }
+  return { db, userId: data.user.id };
+}
+
+export async function submitProductReview(productId: string, expectedUserId: string, draft: ReviewDraft) {
+  const { db, userId } = await signedInAccount(expectedUserId);
   const { error } = await db.from("reviews").upsert({
     id: draft.id,
     product_id: productId,
-    user_id: data.user.id,
+    user_id: userId,
     puntuacion: draft.rating,
-    comentario: draft.comment,
-    ventajas: draft.pros || null,
-    desventajas: draft.cons || null,
+    comentario: draft.comment || null,
+    motivos: draft.reasons,
     estado: draft.pending ? "En revisión" : "Publicada",
     moderation_state: draft.pending ? "pending" : "approved",
   }, { onConflict: "id", ignoreDuplicates: true });
-  if (error) throw new Error("No pudimos guardar la reseña. Inténtalo de nuevo.");
+  if (error?.code === "23505") throw new Error("Ya valoraste este producto.");
+  if (error) throw new Error("No pudimos guardar la valoración. Inténtalo de nuevo.");
+}
+
+export async function proposeProduct(expectedUserId: string, proposal: {
+  name: string;
+  category: CategoryFilter;
+  description: string;
+}) {
+  const { db, userId } = await signedInAccount(expectedUserId);
+  const { error } = await db.from("products").insert({
+    nombre: proposal.name,
+    categoria: categoryFilters[proposal.category][0],
+    descripcion: proposal.description || null,
+    slug: `propuesta-${crypto.randomUUID()}`,
+    publicado: false,
+    propuesto_por: userId,
+  });
+  if (error?.code === "23505") throw new Error("Esta ficha ya existe o ya fue propuesta en la misma categoría.");
+  if (error) throw new Error("No pudimos enviar la ficha. Inténtalo de nuevo.");
 }

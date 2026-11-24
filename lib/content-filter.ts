@@ -7,8 +7,8 @@ const threats=/\b(te voy a|voy a mat|amenaz|golpear|destruir)\b/i;
 const insults=/\b(idiota|imbécil|estúpido|basura de persona|inútil)\b/i;
 const seriousClaims=/\b(fraude|estafa|estafador(?:a)?|robo|ladrón|delito|negligencia|maltrato)\b/i;
 
-export function validateCommunityContent(value: string) {
-  if (value.trim().length < 12) return "Cuéntanos un poco más sobre tu experiencia.";
+export function validateCommunityContent(value: string, minimumLength = 12) {
+  if (value.trim().length < minimumLength) return "Cuéntanos un poco más sobre tu experiencia.";
   if(personalData.some(pattern=>pattern.test(value)))return "Por seguridad, no publiques URLs, correos, teléfonos, WhatsApp, redes sociales ni códigos QR.";
   if(threats.test(value)||insults.test(value))return "No permitimos amenazas, insultos ni ataques personales. Describe la experiencia y los hechos con respeto.";
   if (/(.)\1{8,}/.test(value) || /(.{20,})\1{2,}/i.test(value)) return "Detectamos contenido repetido. Escribe una sola experiencia original.";

@@ -2,7 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { reviewNeedsModeration, validateCommunityContent } from "@/lib/content-filter";
-import { submitProductReview } from "@/lib/product-catalog";
+import { reviewReasonKeys, reviewReasons, submitProductReview } from "@/lib/product-catalog";
 
 export function ProductReviewForm({ productId, userId, onSaved }: {
   productId: string;
@@ -21,11 +21,8 @@ export function ProductReviewForm({ productId, userId, onSaved }: {
     const data = new FormData(form);
     const rating = Number(data.get("rating"));
     const comment = String(data.get("comment")).trim();
-    const pros = String(data.get("pros")).trim();
-    const cons = String(data.get("cons")).trim();
-    // Optional short fields share the same community rules without a minimum length.
-    const validation = validateCommunityContent(comment) ||
-      validateCommunityContent([comment, pros, cons].join("\n"));
+    const reasons = reviewReasonKeys.filter(reason => data.getAll("reason").includes(reason));
+    const validation = validateCommunityContent(comment, 0);
     if (validation || rating < 1 || rating > 5 || !Number.isInteger(rating)) {
       setError(validation || "Elige una calificación entre 1 y 5.");
       return;
@@ -34,11 +31,11 @@ export function ProductReviewForm({ productId, userId, onSaved }: {
     inFlight.current = true;
     setSaving(true);
     setError("");
-    const pending = [comment, pros, cons].some(reviewNeedsModeration);
+    const pending = reviewNeedsModeration(comment);
     draftId.current ??= crypto.randomUUID();
     try {
       await submitProductReview(productId, userId, {
-        id: draftId.current, rating, comment, pros, cons, pending,
+        id: draftId.current, rating, comment, reasons, pending,
       });
       draftId.current = null;
       form.reset();
@@ -55,17 +52,27 @@ export function ProductReviewForm({ productId, userId, onSaved }: {
     onChange={() => { draftId.current = null; }}>
     <h3>Escribe una reseña</h3>
     <fieldset disabled={saving} className="catalog-review-fields">
-      <label>Calificación
-        <select name="rating" required defaultValue="">
-          <option value="" disabled>Elige una calificación</option>
-          {[5, 4, 3, 2, 1].map(value => <option key={value} value={value}>{value} de 5</option>)}
-        </select>
+      <fieldset className="catalog-choice-group">
+        <legend>Calificación</legend>
+        <div className="catalog-choices catalog-stars">
+          {[1, 2, 3, 4, 5].map(value => <label key={value}>
+            <input type="radio" name="rating" value={value} required />
+            <span>{value} ★</span>
+          </label>)}
+        </div>
+      </fieldset>
+      <fieldset className="catalog-choice-group">
+        <legend>Motivos (opcional)</legend>
+        <div className="catalog-choices">
+          {reviewReasonKeys.map(reason => <label key={reason}>
+            <input type="checkbox" name="reason" value={reason} />
+            <span>{reviewReasons[reason]}</span>
+          </label>)}
+        </div>
+      </fieldset>
+      <label>Comentario (opcional)
+        <textarea name="comment" maxLength={3000} rows={4} />
       </label>
-      <label>Comentario
-        <textarea name="comment" required minLength={12} maxLength={3000} rows={4} />
-      </label>
-      <label>Ventajas (opcional)<textarea name="pros" maxLength={500} rows={2} /></label>
-      <label>Desventajas (opcional)<textarea name="cons" maxLength={500} rows={2} /></label>
       <button className="primary">{saving ? "Guardando…" : "Enviar reseña"}</button>
     </fieldset>
     {error && <p className="form-error" role="alert">{error}</p>}
