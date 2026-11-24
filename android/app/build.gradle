@@ -1,0 +1,59 @@
+plugins {
+    id 'com.android.application'
+}
+
+def uploadStore = providers.environmentVariable('MIAUPEDIA_ANDROID_KEYSTORE').orNull
+def uploadAlias = providers.environmentVariable('MIAUPEDIA_ANDROID_KEY_ALIAS').orNull
+def uploadPassword = providers.environmentVariable('MIAUPEDIA_ANDROID_STORE_PASSWORD').orNull
+def uploadKeyPassword = providers.environmentVariable('MIAUPEDIA_ANDROID_KEY_PASSWORD').orElse(
+    providers.environmentVariable('MIAUPEDIA_ANDROID_STORE_PASSWORD')
+).orNull
+def hasReleaseKey = uploadStore && uploadAlias && uploadPassword && uploadKeyPassword
+
+android {
+    namespace 'pe.balbuenalabs.miaupedia'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'pe.balbuenalabs.miaupedia'
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName '0.1.0-beta.1'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseKey) {
+                storeFile file(uploadStore)
+                storeType 'PKCS12'
+                storePassword uploadPassword
+                keyAlias uploadAlias
+                keyPassword uploadKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            debuggable false
+        }
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    if ((graph.hasTask(':app:bundleRelease') || graph.hasTask(':app:assembleRelease')) &&
+        (!hasReleaseKey || !file(uploadStore).isFile())) {
+        throw new GradleException('Configura la clave de carga de Miaupedia antes de compilar release.')
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+}
