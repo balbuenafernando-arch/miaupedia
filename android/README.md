@@ -18,7 +18,7 @@ Usa la clave de carga de Miaupedia para las actualizaciones. El almacén privado
 
 ## Asociación con el sitio
 
-El manifiesto Android contiene el origen de Miaupedia. [La declaración del sitio](../public/.well-known/assetlinks.json) contiene la huella pública del certificado de carga usado para el AAB de esta fase y para los APK de validación local.
+El manifiesto Android contiene el origen de Miaupedia. [La declaración del sitio](../app/.well-known/assetlinks.json/statement.json) contiene la huella pública del certificado de carga usado para el AAB de esta fase y para los APK de validación local.
 
 Cuando Balbuena Labs confirme el identificador en Play Console y active Play App Signing, toma la huella SHA-256 de **App signing key certificate** en **Integridad de la aplicación**. Añádela a la declaración y publica el archivo en Vercel. Conserva la huella de carga solo si habrá APK de pruebas firmados localmente. Comprueba que `https://miaupedia.vercel.app/.well-known/assetlinks.json` responde HTTP 200, con JSON y sin redirecciones. Usa la huella de Google Play al verificar un APK instalado desde la pista de pruebas.
 
