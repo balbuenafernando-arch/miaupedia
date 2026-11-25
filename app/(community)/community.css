@@ -9,14 +9,12 @@
   --muted: #585d75;
   --green: var(--navy);
   min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
   background: var(--paper);
   color: var(--navy);
   font-family: ui-rounded, "Avenir Next", system-ui, sans-serif;
 }
 .community-wrap { width: min(100% - 36px, 920px); margin-inline: auto; }
-.community-main { flex: 1; padding: clamp(20px, 4vw, 38px) 0 26px; }
+.community-main { padding: clamp(20px, 4vw, 38px) 0 26px; }
 .community-narrow { max-width: 680px; margin-inline: auto; }
 .community-header { background: #fff; border-bottom: 1px solid var(--edge); }
 .community-bar { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
@@ -39,8 +37,8 @@
   content: ""; position: absolute; inset: auto calc(50% - 7px) 2px;
   height: 3px; border-radius: 3px; background: var(--navy);
 }
-.community-shell h1 { font-size: clamp(1.55rem, 4.5vw, 2.25rem); line-height: 1.14; letter-spacing: -.035em; margin: 0 0 9px; }
-.community-shell h2 { font-size: 1.2rem; letter-spacing: -.018em; }
+.community-shell h1 { font-size: clamp(1.55rem, 4.5vw, 2.25rem); line-height: 1.14; font-weight: 770; letter-spacing: -.035em; margin: 0 0 9px; }
+.community-shell h2 { font-size: 1.2rem; font-weight: 730; letter-spacing: -.018em; }
 .community-intro { padding: clamp(18px, 4vw, 30px); margin-bottom: 20px; background: var(--lilac); border-radius: var(--radius); }
 .community-intro p, .community-empty p { color: var(--muted); margin: 5px 0 16px; }
 .community-search, .community-flex, .community-results-bar, .community-actions, .community-meta {
