@@ -50,7 +50,7 @@ export function PinPicker({initial,select,cancel,publicPin=true,mapped=false}:{
   const [error,setError]=useState("");
   const revision=useRef(0);
   const lookup=useRef<{controller:AbortController;timer:ReturnType<typeof setTimeout>}|null>(null);
-  const cache=useRef(new Map<string,FijaPin>());
+  const cache=useRef(new globalThis.Map<string,FijaPin>());
   const currentKey=useRef("");
 
   useEffect(()=>()=>{++revision.current;lookup.current?.controller.abort();
