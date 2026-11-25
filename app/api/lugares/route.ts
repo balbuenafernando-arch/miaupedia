@@ -19,7 +19,7 @@ export async function POST(request:Request) {
     url.searchParams.set("bbox","-81.4,-18.5,-68.6,0.1");
   }
   try {
-    const response=await fetch(url,{signal:AbortSignal.timeout(4500),next:{revalidate:86400},
+    const response=await fetch(url,{signal:AbortSignal.timeout(4500),...(reverse?{cache:"no-store" as const}:{next:{revalidate:86400}}),
       headers:{"User-Agent":"MIAUPEDIA (+https://miaupedia.vercel.app)"}});
     if(!response.ok) return Response.json([],{status:503});
     const {features=[]}:{features?:PhotonFeature[]}=await response.json();
@@ -29,10 +29,11 @@ export async function POST(request:Request) {
       const prop=(name:string,length=80)=>{
         const value=feature.properties?.[name];return typeof value==="string"?value.trim().slice(0,length):"";
       };
-      const district=prop("district")||prop("locality")||prop("city");
+      const district=prop("district")||prop("locality")||prop("city")||prop("county");
       const address=[prop("street"),prop("housenumber")].filter(Boolean).join(" ");
-      const label=(prop("name",120)||address||district||prop("county")||"Punto seleccionado").slice(0,120);
-      return [{lat,lon,label,district,province:prop("county")||prop("city"),region:prop("state"),country:prop("country")}];
+      const label=(reverse ? address||prop("name",120)||district||prop("state") : prop("name",120)||address||district).slice(0,120);
+      if(!label) return [];
+      return [{lat,lon,label,district,province:prop("county")||prop("city"),region:prop("state")||prop("region"),country:prop("country")}];
     }));
   } catch {return Response.json([],{status:503});}
 }

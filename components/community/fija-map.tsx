@@ -4,7 +4,7 @@ import { useEffect,useRef } from "react";
 import L from "leaflet";
 import type { Point } from "@/lib/fija-geolocation";
 
-export default function FijaMap({point,change}: {point:Point;change?:(point:Point)=>void}) {
+export default function FijaMap({point,recenter,change}: {point:Point;recenter?:Point;change?:(point:Point)=>void}) {
   const container=useRef<HTMLDivElement>(null);
   const marker=useRef<L.Marker|null>(null);
   const instance=useRef<L.Map|null>(null);
@@ -35,6 +35,9 @@ export default function FijaMap({point,change}: {point:Point;change?:(point:Poin
       instance.current.panTo([point.lat,point.lon],{animate:false});
     }
   },[point.lat,point.lon]);
+  useEffect(()=>{
+    if(recenter) instance.current?.panTo([recenter.lat,recenter.lon],{animate:false});
+  },[recenter]);
   return <>
     <div className="community-map" ref={container} aria-label="Mapa de ubicación"/>
     {change && <button type="button" className="community-link-button" onClick={()=>{
