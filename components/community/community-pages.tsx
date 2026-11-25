@@ -11,6 +11,7 @@ import { branchExperiences, findBranch, listOwnFijas, listSavedFijas } from "@/l
 import { useCatalogResource } from "@/components/recommendations/use-catalog-resource";
 import { DirectoryCard } from "./community-feed";
 import { useCommunityAccess } from "./community-shell";
+import { AuthorLink } from "./community-post-meta";
 import { formatDate } from "./community-format";
 
 export function CommunitySaved() {
@@ -140,7 +141,7 @@ function BranchExperiences({id}: {id:string}) {
     {resource.status==="ready" && <>
       {resource.data.items.length || resource.data.legacy.length ? <ul className="community-list">
         {resource.data.items.map(item=><li key={item.id} className="community-card">
-          <p className="community-meta"><span className="community-rating">★ {item.rating} de 5</span><time dateTime={item.created_at}>{formatDate(item.created_at)}</time></p>
+          <p className="community-meta"><span className="community-rating">★ {item.rating} de 5</span><AuthorLink alias={item.autor} slug={item.author_slug}/><time dateTime={item.created_at}>{formatDate(item.created_at)}</time></p>
           <h3><Link href={`/fijas/${item.id}`}>{item.title}</Link></h3><p className="community-card-body">{item.body}</p>
         </li>)}
         {page===0 && resource.data.legacy.map(item=><li key={item.id} className="community-card">

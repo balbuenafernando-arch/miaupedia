@@ -159,3 +159,39 @@
   .community-search { display: grid; grid-template-columns: minmax(0,1fr) auto; }
   .community-search input, .community-form :is(input, textarea, select) { font-size: 16px; }
 }
+
+.community-shell { --paper: #fff9f2; }
+.community-intro {
+  position: relative; isolation: isolate; overflow: hidden;
+  background: #fff1e5; padding: clamp(14px, 3vw, 24px);
+}
+.community-intro::before {
+  position: absolute; content: ""; inset: auto -8% -45% -8%; height: 78%;
+  background: var(--coral); border-radius: 47% 45% 0 0 / 22% 20% 0 0; z-index: -1;
+}
+.community-banner-copy { display: grid; grid-template-columns: minmax(0,1fr) minmax(86px, 22%); align-items: center; gap: 12px; }
+.community-banner-copy div { padding-block: 8px; }
+.community-banner-copy img { inline-size: min(100%, 155px); block-size: auto; align-self: end; justify-self: end; }
+.community-banner-copy p { max-inline-size: 48ch; }
+.community-intro .community-search { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 0; }
+.community-intro .community-search-field { border-radius: 13px 0 0 13px; }
+.community-intro .community-search > button { min-height: 46px; border-radius: 0 13px 13px 0; }
+.community-card-copy { display: flex; gap: 14px; justify-content: space-between; align-items: center; }
+.community-card-copy > div { min-width: 0; flex: 1; }
+.community-post-photo { border-radius: 10px; object-fit: cover; }
+.community-card-copy .community-post-photo { width: clamp(62px, 19vw, 120px); height: auto; aspect-ratio: 1; }
+.community-prose + .community-post-photo { max-inline-size: 100%; width: 320px; height: auto; margin-block: 8px; }
+.community-author-link { color: var(--navy); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
+.community-action-form { margin: 12px 0; scroll-margin-block: 22px 85px; }
+.community-action-form:focus-within { border-color: var(--field-border); }
+.community-notice { text-align: center; }
+.community-notice > p { text-align: left; }
+.community-notice h2:focus { outline: none; }
+.community-notice > a { display: flex; }
+.community-profile .community-tag { display: inline-flex; gap: 6px; align-items: center; }
+.community-footer { border-top-color: #efbaa6; }
+@media (max-width: 420px) {
+  .community-banner-copy { grid-template-columns: minmax(0,1fr) minmax(72px,22%); gap: 6px; }
+  .community-banner-copy h1 { font-size: clamp(1.3rem,5.7vw,1.6rem); }
+  .community-banner-copy p { font-size: .88rem; line-height: 1.35; }
+}

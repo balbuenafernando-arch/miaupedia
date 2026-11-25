@@ -73,7 +73,7 @@ export function CommunityShell({children}: {children:ReactNode}) {
           <Link href="/" aria-label="MIAUPEDIA, inicio"><MiaupediaLogo /></Link>
           <nav aria-label="Navegación principal" className="community-nav">
             {destinations.map(({href,label,Icon}) => {
-              const active = href === "/" ? pathname === "/" || pathname.startsWith("/fijas/") || pathname.startsWith("/sedes/") : pathname.startsWith(href);
+              const active = href === "/" ? pathname === "/" || pathname.startsWith("/fijas/") || pathname.startsWith("/sedes/") || pathname.startsWith("/autores/") : pathname.startsWith(href);
               return <Link key={href} href={href} aria-current={active ? "page" : undefined}>
                 <span className="community-nav-icon"><Icon aria-hidden="true" size={20} /></span><span>{label}</span>
               </Link>;

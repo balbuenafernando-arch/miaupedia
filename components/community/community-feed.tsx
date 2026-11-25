@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { AuthorLink, PostPhoto } from "./community-post-meta";
 import { MapPin, PawPrint, Search, Star, ThumbsUp } from "lucide-react";
 import { useCallback,useState } from "react";
 import { searchCommunity, type DirectoryItem, type Sort } from "@/lib/community";
 import { useCatalogResource } from "@/components/recommendations/use-catalog-resource";
-import { formatDate, formatPrice, freshnessLabel } from "./community-format";
+import { formatDate, formatPrice } from "./community-format";
 
 export function CommunityFeed({initialQuery=""}: {initialQuery?:string}) {
   const [input,setInput] = useState(initialQuery);
@@ -17,8 +19,11 @@ export function CommunityFeed({initialQuery=""}: {initialQuery?:string}) {
 
   return <>
     <section className="community-intro">
-      <h1>¿Qué fija estás buscando?</h1>
-      <p>Encuentra precios, lugares y experiencias de personas que también cuidan gatos.</p>
+      <div className="community-banner-copy">
+        <div><h1>¿Qué fija estás buscando?</h1>
+        <p>Encuentra precios, lugares y experiencias de personas que también cuidan gatos.</p></div>
+        <Image src="/icons/miaupedia-gato-explorar.webp" alt="" width={234} height={213} priority unoptimized/>
+      </div>
       <form className="community-search" role="search" onSubmit={event => {
         event.preventDefault();
         setQuery(input.trim()); setPage(0);
@@ -64,11 +69,14 @@ export function DirectoryCard({item}: {item:DirectoryItem}) {
   const business = item.kind==="business";
   return <article className="community-card">
     <div className="community-meta">
-      <span className="community-tag">{business ? (item.business_type==="Pet Shop" ? "Tienda" : "Veterinaria") : freshnessLabel[item.freshness]}</span>
+      {business && <span className="community-tag">{item.business_type==="Pet Shop" ? "Tienda" : "Veterinaria"}</span>}
+      {!business && item.autor && <AuthorLink alias={item.autor} slug={item.author_slug}/>}
       {item.created_at && <time dateTime={item.created_at}>{formatDate(item.created_at)}</time>}
     </div>
-    <h3><Link href={business ? `/sedes/${item.slug}` : `/fijas/${item.id}`}>{item.title}</Link></h3>
-    <p className="community-card-body">{item.body}</p>
+    <div className="community-card-copy"><div><h3><Link href={business ? `/sedes/${item.slug}` : `/fijas/${item.id}`}>{item.title}</Link></h3>
+    <p className="community-card-body">{item.body}</p></div>
+      {!business && <PostPhoto source={item.image_url}/>}
+    </div>
     <div className="community-meta">
       {item.location && <span><MapPin size={15} aria-hidden="true"/>{item.location}</span>}
       {item.price !== null && <span>{formatPrice(item.price)}</span>}

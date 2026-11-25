@@ -10,6 +10,7 @@ export type Branch = {
 export type Fija = {
   id: string; title: string; body: string; location: string | null; autor: string;
   price: number | null; created_at: string; utiles: number; freshness: Freshness;
+  author_slug?: string | null; image_url?: string | null;
   freshness_at: string | null; business_id: string | null; rating: number | null;
 };
 export type DirectoryItem = Omit<Fija, "autor" | "freshness_at" | "business_id" | "rating"> & {
@@ -18,18 +19,12 @@ export type DirectoryItem = Omit<Fija, "autor" | "freshness_at" | "business_id" 
 };
 type LegacyExperience = {id:string;puntuacion:number;comentario:string|null;created_at:string};
 export type CommunityComment = { id: string; autor: string; body: string; created_at: string };
-export type UpdateKind = keyof typeof updateLabels;
-export type CommunityUpdate = {id: string; kind: UpdateKind; note: string | null; price: number | null; created_at: string};
 export type ReportReason = keyof typeof reportLabels;
-export const updateLabels = {
-  confirmed: "Sigue vigente", price: "Cambió el precio", availability: "Cambió la disponibilidad",
-  closed: "El lugar cerró", other: "Otro cambio",
-};
 export const reportLabels = {
   spam: "Spam", abuse: "Insultos o acoso", personal_data: "Datos personales",
   false_information: "Información presuntamente falsa", other: "Otro incumplimiento",
 };
-const fijaColumns = "id,title,body,location,autor,price,created_at,utiles,freshness,freshness_at,business_id,rating";
+const fijaColumns = "id,title,body,location,autor,price,created_at,utiles,freshness,freshness_at,business_id,rating,author_slug,image_url";
 const branchColumns = "id,slug,nombre,tipo,distrito,direccion";
 
 function db() {
@@ -120,16 +115,11 @@ export async function publishCommunity(input: {
   return data;
 }
 
-export async function loadFijaActivity(id: string, signal: AbortSignal): Promise<{comments:CommunityComment[];updates:CommunityUpdate[]}> {
-  const client = db();
-  const [comments,updates] = await Promise.all([
-    client.from("fija_comments").select("id,autor,body,created_at").eq("fija_id",id)
-      .order("created_at",{ascending:false}).limit(50).abortSignal(signal).returns<CommunityComment[]>(),
-    client.from("fija_updates").select("id,kind,note,price,created_at").eq("fija_id",id)
-      .order("created_at",{ascending:false}).order("id",{ascending:false}).limit(20).abortSignal(signal).returns<CommunityUpdate[]>(),
-  ]);
-  requireSuccess(comments.error || updates.error,"No pudimos cargar los comentarios y actualizaciones.");
-  return {comments:comments.data ?? [],updates:updates.data ?? []};
+export async function loadFijaActivity(id:string, signal:AbortSignal): Promise<CommunityComment[]> {
+  const {data,error} = await db().from("fija_comments").select("id,autor,body,created_at").eq("fija_id",id)
+    .order("created_at",{ascending:false}).limit(50).abortSignal(signal).returns<CommunityComment[]>();
+  requireSuccess(error,"No pudimos cargar los comentarios.");
+  return data ?? [];
 }
 
 export async function getCommunityMarks(id: string, signal: AbortSignal) {
@@ -163,16 +153,9 @@ export async function addCommunityComment(id: string, fijaId: string, body: stri
   requireSuccess(error,"No pudimos publicar el comentario.");
 }
 
-export async function addCommunityUpdate(id: string, fijaId: string, kind: UpdateKind, note: string, price: number|null) {
-  const {error} = await db().from("fija_updates").upsert({id,fija_id:fijaId,kind,note:note || null,price},
-    {onConflict:"id",ignoreDuplicates:true});
-  requireSuccess(error,"No pudimos guardar el cambio.");
-}
-
-export async function reportCommunity(fijaId: string, reason: ReportReason, target?: {kind:"comment"|"update";id:string}) {
+export async function reportCommunity(fijaId: string, reason: ReportReason, target?: {kind:"comment";id:string}) {
   const {error} = await db().from("fija_reports").insert({fija_id:fijaId,reason,
-    comment_id:target?.kind === "comment" ? target.id : null,
-    update_id:target?.kind === "update" ? target.id : null});
+    comment_id:target?.id ?? null});
   requireSuccess(error,"No pudimos enviar el reporte.","Ya enviaste un reporte sobre este contenido.");
 }
 
@@ -183,5 +166,24 @@ export async function listOwnFijas(page:number, signal:AbortSignal): Promise<{it
     .abortSignal(signal).returns<OwnFija[]>();
   requireSuccess(error, "No pudimos cargar tus publicaciones.");
   const items = Array.isArray(data) ? data : [];
-  return {items:items.slice(0,20), more:items.length>20};
+  const pageItems = items.slice(0,20);
+  if (!pageItems.length) return {items:[],more:false};
+  const {data:details,error:detailsError} = await db().from("fijas").select("id,author_slug,image_url")
+    .in("id",pageItems.map(item=>item.id)).abortSignal(signal).returns<Pick<Fija,"id"|"author_slug"|"image_url">[]>();
+  requireSuccess(detailsError,"No pudimos cargar tus publicaciones.");
+  const byId = new Map((details ?? []).map(item=>[item.id,item]));
+  return {items:pageItems.map(item=>({...item,...byId.get(item.id)})), more:items.length>20};
+}
+
+export type PublicAuthor = {alias:string; joined_at:string; useful_votes:number};
+
+export async function loadPublicAuthor(slug:string,page:number,signal:AbortSignal) {
+  const client=db();
+  const [author,posts]=await Promise.all([
+    client.rpc("public_community_author",{slug}).abortSignal(signal).maybeSingle<PublicAuthor>(),
+    client.from("public_community_posts").select(fijaColumns).eq("author_slug",slug)
+      .order("created_at",{ascending:false}).order("id").range(page*20,page*20+20).abortSignal(signal).returns<Fija[]>(),
+  ]);
+  requireSuccess(author.error || posts.error,"No pudimos cargar el perfil público.");
+  return {author:author.data,items:(posts.data ?? []).slice(0,20),more:(posts.data?.length ?? 0)>20};
 }
