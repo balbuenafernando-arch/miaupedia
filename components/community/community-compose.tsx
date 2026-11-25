@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { MiaupediaMark } from "@/components/miaupedia-logo";
+import { LocationField,type LocationValue } from "./fija-location";
 import { GoogleAccess } from "./community-auth";
 import { useRouter } from "next/navigation";
 import { useCallback,useRef,useState, type FormEvent } from "react";
@@ -33,6 +34,7 @@ function ComposeForm({slug}: {slug?:string}) {
   const [selected,setSelected]=useState<Branch|null>(null);
   const [pending,setPending]=useState(false);
   const [busy,setBusy]=useState(false);
+  const [geo,setGeo]=useState<LocationValue>({pin:null,legacy:null});
   const [error,setError]=useState("");
   const [proposal,setProposal]=useState(false);
   const [name,setName]=useState("");
@@ -56,10 +58,11 @@ function ComposeForm({slug}: {slug?:string}) {
     const form=new FormData(event.currentTarget);
     const title=String(form.get("title") ?? "").trim();
     const body=String(form.get("body") ?? "").trim();
-    const location=String(form.get("location") ?? "").trim();
+    const location=geo.legacy ?? "";
+    if (geo.pending) {setError("Confirma o cancela la ubicación antes de publicar.");return;}
     const priceText=String(form.get("price") ?? "");
     const validation=validateCommunityContent(title,3) || validateCommunityContent(body,5) ||
-      validateCommunityContent(location,0);
+      validateCommunityContent(location,0) || validateCommunityContent(geo.pin?.district ?? "",0);
     if (validation) return setError(validation);
     if (kind==="business" && !branch && !proposal) return setError("Busca la sede y selecciónala o propón una nueva.");
     if (kind==="business" && proposal) {
@@ -70,7 +73,7 @@ function ComposeForm({slug}: {slug?:string}) {
     requireParticipation(()=>{
       setBusy(true);
       id.current ??= crypto.randomUUID();
-      void publishCommunity({id:id.current,title,body,location,price:priceText ? Number(priceText) : null,
+      void publishCommunity({id:id.current,title,body,location,price:priceText ? Number(priceText) : null,pin:geo.pin,
         branch:kind==="business" && !proposal ? branch : null,
         rating:kind==="business" ? Number(form.get("rating")) : null,
         proposal:kind==="business" && proposal ? {type:branchType,name:name.trim(),district:district.trim(),address:address.trim()} : null,
@@ -122,9 +125,9 @@ function ComposeForm({slug}: {slug?:string}) {
     <label>{kind==="business" ? "¿Cómo fue la atención?" : "¿Cuál es la fija?"}
       <textarea name="body" required minLength={5} maxLength={2000} rows={4}/>
     </label>
-    {kind==="free" && <label>Ubicación (opcional)<input name="location" maxLength={120} placeholder="Ej. Magdalena del Mar"/></label>}
+    <LocationField value={geo} onChange={setGeo}/>
     <label>Precio en soles (opcional)<input name="price" type="number" min="0" max="99999999.99" step="0.01" inputMode="decimal"/></label>
     {error && <p role="alert" className="community-error">{error}</p>}
-    <button className="community-primary" disabled={busy}>{busy?"Enviando…":"Compartir fija"}</button>
+    <button className="community-primary" disabled={busy || geo.pending}>{busy?"Enviando…":"Compartir fija"}</button>
   </form>;
 }

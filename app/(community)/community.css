@@ -211,3 +211,29 @@
 .community-share input { min-width: 0; width: 100%; }
 .community-profile-controls { margin: 14px 0 18px; }
 .community-avatar img.miaupedia-medal { width: 64%; height: 64%; object-fit: contain; }
+
+.community-location { min-inline-size: 0; border: 1px solid var(--edge); border-radius: 13px; padding: 10px 12px; background: white; }
+.community-form .community-location-toggle, .community-nearby > label { display: flex; align-items: center; gap: 8px; min-height: 38px; }
+.community-location-toggle input { margin-inline-start: auto; }
+.community-location-picker { margin-top: 8px; }
+.community-location-picker .community-actions, .community-public-pin .community-actions { margin-top: 2px; }
+.community-location-summary { display: flex; align-items: center; flex-wrap: wrap; column-gap: 8px; }
+.community-location-summary > strong { flex-basis: 100%; }
+.community-location-results { list-style: none; padding: 0; margin: 0; }
+.community-location-results button { width: 100%; text-align: left; min-height: 44px; border-bottom: 1px solid var(--edge); }
+.community-map { height: clamp(190px, 38vw, 305px); width: 100%; min-height: 190px; isolation: isolate; border-radius: 10px; background: var(--paper); margin-block: 8px; }
+.community-map-pin { border-radius: 50% 50% 50% 0; transform-origin: center; border: 3px solid var(--navy); background: var(--coral); }
+.community-public-pin { display: grid; align-items: start; justify-items: start; gap: 8px; margin: 10px 0; }
+.community-public-pin p { display: flex; gap: 5px; flex-wrap: wrap; margin: 0; }
+.community-nearby { margin: 0 0 12px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; }
+.community-nearby input { accent-color: var(--navy); }
+.community-nearby > :is(.community-location-picker,p) { flex-basis: 100%; }
+.community-nearby select { min-height: 38px; border: 1px solid var(--edge); border-radius: 8px; padding: 4px; }
+
+.welcome-scene { position: relative; min-height: 130px; overflow: hidden; background: #ffeddf; gap: 2px; padding: 10px 16px; }
+.welcome-cat { width: min(48%,110px); height: auto; align-self: end; z-index: 1; }
+.welcome-phone, .welcome-prop { display: grid; place-items: center; color: var(--navy); background: var(--lilac); border-radius: 14px; }
+.welcome-phone { padding: 6px; margin-right: -22px; transform: rotate(-8deg); }
+.welcome-scene-1 .welcome-prop { margin-inline-start: -12px; align-self: center; padding: 8px; }
+.welcome-scene-2 .welcome-prop { position: absolute; top: 8px; padding: 3px 9px; }
+.welcome-cat-peer { transform: scaleX(-1); width: min(44%,96px); }
