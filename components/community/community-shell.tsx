@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bookmark, Search, Send, UserRound, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { CommunityOnboarding } from "./community-onboarding";
 import { CommunityAuthModal } from "./community-auth";
 import type { User } from "@supabase/supabase-js";
 import { MiaupediaLogo } from "@/components/miaupedia-logo";
@@ -89,6 +90,7 @@ export function CommunityShell({children}: {children:ReactNode}) {
         {(Object.keys(legalDocuments) as (keyof typeof legalDocuments)[]).map(document =>
           <Link key={document} href={`/politicas/${document}`}>{legalDocuments[document].title}</Link>)}
       </footer>
+      {userId === null && !authOpen && destinations.some(destination=>destination.href === pathname) && <CommunityOnboarding/>}
       {authOpen && <CommunityAuthModal onClose={() => setAuthOpen(false)} />}
       {consentFor && consentFor.userId === userId && <Consent key={userId}
         onClose={() => setConsentFor(null)} onAccepted={() => {

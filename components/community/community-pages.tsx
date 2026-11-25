@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bookmark, LogOut, MessageCircle, UserRound } from "lucide-react";
+import { Bookmark, LogOut, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import { MiaupediaMark } from "@/components/miaupedia-logo";
 import { GoogleAccess } from "./community-auth";
@@ -12,6 +12,10 @@ import { useCatalogResource } from "@/components/recommendations/use-catalog-res
 import { DirectoryCard } from "./community-feed";
 import { useCommunityAccess } from "./community-shell";
 import { AuthorLink } from "./community-post-meta";
+import { googleAvatarSources } from "@/lib/google-avatar";
+import type { User } from "@supabase/supabase-js";
+import { CommunityFeedback } from "./community-feedback";
+import { CommunityShare } from "./community-share";
 import { formatDate } from "./community-format";
 
 export function CommunitySaved() {
@@ -36,13 +40,18 @@ function SavedList() {
   </li>)}</ul> : <div className="community-empty"><Bookmark aria-hidden="true"/><p>Aún no has guardado fijas.</p><Link className="community-secondary" href="/">Explorar la comunidad</Link></div>;
 }
 
-function googleAvatar(value:unknown) {
-  if (typeof value !== "string") return undefined;
-  try {
-    const url = new URL(value);
-    if (url.protocol === "https:" && url.hostname.endsWith(".googleusercontent.com") && !url.username && !url.password) return url.href;
-  } catch {}
-  return undefined;
+function PrivateAvatar({user}: {user:User}) {
+  const [failed,setFailed]=useState(false);
+  return <span className="community-avatar">{!failed && googleAvatarSources(user).length
+    ? <Image src="/api/perfil/avatar" alt="" width={72} height={72} unoptimized onError={()=>setFailed(true)}/>
+    : <MiaupediaMark/>}</span>;
+}
+
+function ProfileActions() {
+  return <div className="community-actions community-profile-controls">
+    <CommunityFeedback/>
+    <CommunityShare path="/" title="MIAUPEDIA" invite/>
+  </div>;
 }
 
 export function CommunityProfile() {
@@ -56,16 +65,15 @@ export function CommunityProfile() {
     <h1>Bienvenido a MIAUPEDIA</h1>
     <p>Únete para compartir tus fijas y guardar las que te sirvan.</p>
     <GoogleAccess/>
+    <ProfileActions/>
     {message && <p role="status">{message}</p>}
   </section>;
 
   const name = [user.user_metadata.full_name,user.user_metadata.name,user.user_metadata.display_name]
     .find((value): value is string => typeof value === "string" && !!value.trim()) ?? "Miauamigo";
-  const avatar = googleAvatar(user.user_metadata.avatar_url ?? user.user_metadata.picture);
   return <section className="community-narrow">
     <div className="community-profile">
-      <span className="community-avatar">{avatar ? <Image src={avatar} alt="" width={72} height={72}
-        unoptimized referrerPolicy="no-referrer"/> : <UserRound size={34} aria-hidden="true"/>}</span>
+      <PrivateAvatar key={`${user.id}:${googleAvatarSources(user).join("|")}`} user={user}/>
       <h1>{name}</h1>
       {user.email && <p>{user.email}</p>}
       <button type="button" className="community-secondary" disabled={signingOut} onClick={async () => {
@@ -82,6 +90,7 @@ export function CommunityProfile() {
       }}><LogOut size={17} aria-hidden="true"/> Cerrar sesión</button>
       {message && <p role="status">{message}</p>}
     </div>
+    <ProfileActions/>
     <OwnPosts key={user.id}/>
   </section>;
 }

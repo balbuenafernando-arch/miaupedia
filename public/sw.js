@@ -1,8 +1,8 @@
-const CACHE = "miaupedia-offline-v1";
+const CACHE = "miaupedia-offline-v2";
 const FALLBACK = "/sin-conexion.html";
 
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.add(FALLBACK)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll([FALLBACK, "/icons/miaupedia-wordmark.png"])).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", event => {
@@ -16,6 +16,10 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   const { request } = event;
+  if (request.method === "GET" && request.url === new URL("/icons/miaupedia-wordmark.png",self.location.origin).href) {
+    event.respondWith(caches.open(CACHE).then(cache=>cache.match(request)).then(hit=>hit ?? fetch(request)));
+    return;
+  }
   if (request.method !== "GET" || request.mode !== "navigate" ||
       new URL(request.url).origin !== self.location.origin) return;
 
