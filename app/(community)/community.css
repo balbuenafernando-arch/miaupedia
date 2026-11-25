@@ -31,7 +31,6 @@
 }
 .community-nav a[aria-current="page"] .community-nav-icon { color: #9e3c2e; }
 .community-nav a[aria-current="page"] .community-nav-icon svg { stroke-width: 2.5; }
-.community-nav a[aria-current="page"] { font-weight: 800; }
 .community-nav a[aria-current="page"]::after {
   content: ""; position: absolute; inset: auto calc(50% - 7px) 2px;
   height: 3px; border-radius: 3px; background: var(--coral);
