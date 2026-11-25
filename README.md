@@ -61,3 +61,9 @@ Documentos de entrega:
 ## Seguridad
 
 La clave `SUPABASE_SERVICE_ROLE_KEY` es únicamente para procesos seguros del servidor y nunca debe exponerse con prefijo `NEXT_PUBLIC_`. Miaupedia no incluye diagnósticos, tratamientos, medicamentos ni dosificaciones.
+
+## Acceso de Google
+
+El cliente OAuth de Google para MIAUPEDIA es de tipo **Aplicación web**. Google vuelve primero a `https://rwgrntazljuyznzzvfgf.supabase.co/auth/v1/callback`. Después, Supabase devuelve el navegador a `https://miaupedia.vercel.app/auth/callback`, la misma ruta para Vercel y la TWA de Android. El botón de Google aparece al habilitar ese proveedor en el Supabase de MIAUPEDIA. El secreto del cliente se configura únicamente en Supabase.
+
+Mantén deshabilitado el registro público. Para un tester, habilita previamente una cuenta con su correo de Google en **Authentication → Users → Add user → Create new user**, con el correo confirmado. Supabase vincula la identidad de Google verificada a esa cuenta de MIAUPEDIA. Este flujo no envía correos de registro ni requiere SMTP.
