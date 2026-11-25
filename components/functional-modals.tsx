@@ -2,7 +2,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Cat, Check, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles, X } from "lucide-react";
 import { createClient } from "@/lib/supabase";
-import { googleCallbackPath, googleReturnCookie, googleReturnPath, googleSignInAvailable } from "@/lib/google-auth";
+import { googleSignInAvailable, startGoogleSignIn } from "@/lib/google-auth";
 import type { CatProfile } from "@/lib/use-persistent-state";
 import { missingProfileFields, profileCompletion } from "@/lib/cat-profile";
 export type DemoUser = {
@@ -33,23 +33,11 @@ export function AuthModal({ onClose, onAuthenticated, deviceOnly = false }: {
     }, [deviceOnly]);
 
     async function signInWithGoogle() {
-        const supabase = createClient();
-        if (!supabase || !googleAvailable || googleLoading || loading) return;
+        if (!googleAvailable || googleLoading || loading) return;
         setGoogleLoading(true);
         setMessage("");
         try {
-            const { data, error } = await supabase.auth.signInWithOAuth({
-                provider: "google",
-                options: {
-                    redirectTo: new URL(googleCallbackPath, location.origin).href,
-                    queryParams: { prompt: "select_account" },
-                    skipBrowserRedirect: true,
-                },
-            });
-            if (error || !data.url) throw new Error("No pudimos conectar con Google.");
-            const target = encodeURIComponent(googleReturnPath(location.pathname));
-            document.cookie = `${googleReturnCookie}=${target}; Path=${googleCallbackPath}; Max-Age=600; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
-            location.assign(data.url);
+            await startGoogleSignIn();
         } catch {
             setGoogleLoading(false);
             setMessage("No pudimos abrir el acceso con Google. Inténtalo de nuevo.");

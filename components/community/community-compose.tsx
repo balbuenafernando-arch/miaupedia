@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { MessageCircleHeart } from "lucide-react";
+import { GoogleAccess } from "./community-auth";
 import { useRouter } from "next/navigation";
 import { useCallback,useRef,useState, type FormEvent } from "react";
 import { findBranch,findBranches,publishCommunity, type Branch, type BranchType } from "@/lib/community";
@@ -9,12 +11,18 @@ import { useCatalogResource } from "@/components/recommendations/use-catalog-res
 import { useCommunityAccess } from "./community-shell";
 
 export function CommunityCompose({slug}: {slug?:string}) {
-  const {userId,requireAccount} = useCommunityAccess();
-  return <section className="community-narrow">
+  const {userId} = useCommunityAccess();
+  if (userId === undefined) return <p className="community-status" role="status">Cargando acceso…</p>;
+  if (!userId) return <section className="community-invitation community-narrow">
+    <span className="community-illustration"><MessageCircleHeart size={32} aria-hidden="true"/></span>
+    <h1>¿Tienes una buena fija?</h1>
+    <p>Compártela con quienes también quieren lo mejor para sus gatos.</p>
+    <GoogleAccess/>
+  </section>;
+  return <section className="community-narrow community-compose">
     <h1>Pasar la voz</h1>
-    <p>Cuenta qué encontraste o cómo fue la atención. Empieza con lo que le dirías a un amigo.</p>
-    {userId ? <ComposeForm key={userId} slug={slug}/> :
-      <button className="community-primary" disabled={userId===undefined} onClick={()=>requireAccount(()=>undefined)}>Ingresar para compartir</button>}
+    <p className="community-lead">Cuenta qué encontraste o cómo fue la atención. Empieza con lo que le dirías a un amigo.</p>
+    <ComposeForm key={userId} slug={slug}/>
   </section>;
 }
 

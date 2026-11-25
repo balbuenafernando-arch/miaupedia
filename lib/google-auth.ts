@@ -1,3 +1,5 @@
+import { createClient } from "@/lib/supabase";
+
 export const googleCallbackPath = "/auth/callback";
 export const googleReturnCookie = "miaupedia-oauth-return";
 
@@ -18,4 +20,21 @@ export async function googleSignInAvailable(signal: AbortSignal) {
   if (!response.ok) return false;
   const settings: { external?: { google?: boolean } } = await response.json();
   return settings.external?.google === true;
+}
+
+export async function startGoogleSignIn() {
+  const client = createClient();
+  if (!client) throw new Error("El acceso aún no está disponible.");
+  const { data, error } = await client.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: new URL(googleCallbackPath, location.origin).href,
+      queryParams: { prompt: "select_account" },
+      skipBrowserRedirect: true,
+    },
+  });
+  if (error || !data.url) throw new Error("No pudimos conectar con Google.");
+  const target = encodeURIComponent(googleReturnPath(location.pathname));
+  document.cookie = `${googleReturnCookie}=${target}; Path=${googleCallbackPath}; Max-Age=600; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
+  location.assign(data.url);
 }

@@ -4,13 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bookmark, Search, Send, UserRound, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { AuthModal } from "@/components/functional-modals";
+import { CommunityAuthModal } from "./community-auth";
+import type { User } from "@supabase/supabase-js";
 import { MiaupediaLogo } from "@/components/miaupedia-logo";
-import { useCatalogAccount } from "@/components/recommendations/use-catalog-account";
+import { useCatalogUser } from "@/components/recommendations/use-catalog-account";
 import { acceptCommunityDocuments, checkCommunityAcceptance } from "@/lib/community";
 import { legalDocuments, requiredDocuments } from "@/lib/community-legal";
 
 const Access = createContext<{
+  user: User | null | undefined;
   userId: string | null | undefined;
   requireAccount: (action: () => void) => void;
   requireParticipation: (action: () => void) => void;
@@ -31,7 +33,8 @@ const destinations = [
 
 export function CommunityShell({children}: {children:ReactNode}) {
   const pathname = usePathname();
-  const userId = useCatalogAccount();
+  const user = useCatalogUser();
+  const userId = user ? user.id : user;
   const [authOpen,setAuthOpen] = useState(false);
   const [consentFor,setConsentFor] = useState<{userId:string; next:() => void} | null>(null);
   const [error,setError] = useState("");
@@ -63,7 +66,7 @@ export function CommunityShell({children}: {children:ReactNode}) {
     });
   }
 
-  return <Access.Provider value={{userId,requireAccount,requireParticipation}}>
+  return <Access.Provider value={{user,userId,requireAccount,requireParticipation}}>
     <div className="community-shell">
       <header className="community-header">
         <div className="community-wrap community-bar">
@@ -72,7 +75,7 @@ export function CommunityShell({children}: {children:ReactNode}) {
             {destinations.map(({href,label,Icon}) => {
               const active = href === "/" ? pathname === "/" || pathname.startsWith("/fijas/") || pathname.startsWith("/sedes/") : pathname.startsWith(href);
               return <Link key={href} href={href} aria-current={active ? "page" : undefined}>
-                <Icon aria-hidden="true" size={19} /><span>{label}</span>
+                <span className="community-nav-icon"><Icon aria-hidden="true" size={20} /></span><span>{label}</span>
               </Link>;
             })}
           </nav>
@@ -86,7 +89,7 @@ export function CommunityShell({children}: {children:ReactNode}) {
         {(Object.keys(legalDocuments) as (keyof typeof legalDocuments)[]).map(document =>
           <Link key={document} href={`/politicas/${document}`}>{legalDocuments[document].title}</Link>)}
       </footer>
-      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} onAuthenticated={() => setAuthOpen(false)} />}
+      {authOpen && <CommunityAuthModal onClose={() => setAuthOpen(false)} />}
       {consentFor && consentFor.userId === userId && <Consent key={userId}
         onClose={() => setConsentFor(null)} onAccepted={() => {
           const next = consentFor.next;
