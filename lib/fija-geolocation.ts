@@ -40,11 +40,20 @@ export async function searchPlaces(query:string,signal:AbortSignal):Promise<Fija
   if(!response.ok) throw new Error("La búsqueda de lugares no está disponible. Puedes elegir en el mapa.");
   return response.json();
 }
-export async function describePin(point:Point):Promise<FijaPin|null> {
-  // Reverse lookup uses a coarse point and only for a publisher's selected pin.
+export async function describePin(point:Point,signal:AbortSignal):Promise<FijaPin|null> {
   const response=await fetch("/api/lugares",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({point:{lat:Number(point.lat.toFixed(3)),lon:Number(point.lon.toFixed(3))}})});
-  if(!response.ok) return null;
+    body:JSON.stringify({point:{lat:Number(point.lat.toFixed(5)),lon:Number(point.lon.toFixed(5))}}),signal});
+  if(!response.ok) throw new Error("No pudimos consultar la dirección.");
   const results:FijaPin[]=await response.json();
   return results[0] ?? null;
+}
+
+export function formatPinAddress(pin:FijaPin) {
+  const seen=new Set<string>();
+  return [pin.label,pin.district,pin.province,pin.region].filter(part=>{
+    const key=part?.trim().toLocaleLowerCase("es");
+    if(!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).join(", ");
 }
