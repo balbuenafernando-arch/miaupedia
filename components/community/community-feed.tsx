@@ -1,0 +1,79 @@
+"use client";
+
+import Link from "next/link";
+import { MapPin, PawPrint, Search, Star, ThumbsUp } from "lucide-react";
+import { useCallback,useState } from "react";
+import { searchCommunity, type DirectoryItem, type Sort } from "@/lib/community";
+import { useCatalogResource } from "@/components/recommendations/use-catalog-resource";
+import { formatDate, formatPrice, freshnessLabel } from "./community-format";
+
+export function CommunityFeed({initialQuery=""}: {initialQuery?:string}) {
+  const [input,setInput] = useState(initialQuery);
+  const [query,setQuery] = useState(initialQuery);
+  const [sort,setSort] = useState<Sort>("relevantes");
+  const [page,setPage] = useState(0);
+  const load = useCallback((signal:AbortSignal) => searchCommunity(query,sort,page,signal),[query,sort,page]);
+  const {resource,refresh} = useCatalogResource(load);
+
+  return <>
+    <section className="community-intro">
+      <h1>¿Qué fija estás buscando?</h1>
+      <p>Encuentra precios, lugares y experiencias de personas que también cuidan gatos.</p>
+      <form className="community-search" role="search" onSubmit={event => {
+        event.preventDefault();
+        setQuery(input.trim()); setPage(0);
+      }}>
+        <label className="community-search-field">
+          <Search size={20} aria-hidden="true"/>
+          <input type="search" aria-label="Buscar en la comunidad" placeholder="Arena barata, Magdalena…" maxLength={120}
+            value={input} onChange={event=>setInput(event.target.value)} />
+        </label>
+        <button className="community-primary">Buscar</button>
+      </form>
+    </section>
+    <div className="community-results-bar">
+      <h2>{query ? `Resultados para “${query}”` : "De la comunidad"}</h2>
+      <select aria-label="Ordenar resultados" value={sort} onChange={event=>{
+        const value=event.target.value;
+        if (value==="relevantes" || value==="recientes" || value==="utiles") setSort(value);
+        setPage(0);
+      }}>
+        <option value="relevantes">Más relevantes</option><option value="recientes">Más recientes</option><option value="utiles">Más útiles</option>
+      </select>
+    </div>
+    {resource.status==="loading" && <p role="status">Buscando fijas…</p>}
+    {resource.status==="error" && <button className="community-secondary" onClick={refresh}>Reintentar búsqueda</button>}
+    {resource.status==="ready" && <>
+      {resource.data.items.length ? <ul className="community-list">
+        {resource.data.items.map(item=><li key={`${item.kind}-${item.id}`}><DirectoryCard item={item}/></li>)}
+      </ul> : <div className="community-empty">
+        <PawPrint aria-hidden="true" size={25}/>
+        <p>{query ? "No encontramos coincidencias." : "Aún no hay fijas publicadas."}</p>
+        {query ? <button className="community-link-button" onClick={()=>{setInput("");setQuery("");setPage(0);}}>Limpiar búsqueda</button>
+          : <Link className="community-primary" href="/pasar-la-voz">Compartir la primera fija</Link>}
+      </div>}
+      {(page>0 || resource.data.more) && <nav className="community-actions" aria-label="Paginación de resultados">
+        <button className="community-secondary" disabled={!page} onClick={()=>setPage(page-1)}>Anterior</button>
+        <button className="community-secondary" disabled={!resource.data.more} onClick={()=>setPage(page+1)}>Siguiente</button>
+      </nav>}
+    </>}
+  </>;
+}
+
+export function DirectoryCard({item}: {item:DirectoryItem}) {
+  const business = item.kind==="business";
+  return <article className="community-card">
+    <div className="community-meta">
+      <span className="community-tag">{business ? (item.business_type==="Pet Shop" ? "Tienda" : "Veterinaria") : freshnessLabel[item.freshness]}</span>
+      {item.created_at && <time dateTime={item.created_at}>{formatDate(item.created_at)}</time>}
+    </div>
+    <h3><Link href={business ? `/sedes/${item.slug}` : `/fijas/${item.id}`}>{item.title}</Link></h3>
+    <p className="community-card-body">{item.body}</p>
+    <div className="community-meta">
+      {item.location && <span><MapPin size={15} aria-hidden="true"/>{item.location}</span>}
+      {item.price !== null && <span>{formatPrice(item.price)}</span>}
+      {business ? <span><Star size={15} aria-hidden="true"/>{item.average_rating ?? "Sin valoración"} · {item.experience_count} experiencias</span>
+        : <span><ThumbsUp size={15} aria-hidden="true"/>{item.utiles} útiles</span>}
+    </div>
+  </article>;
+}

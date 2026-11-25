@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: "Descubre productos, servicios y veterinarias recomendadas por personas con gatos como el tuyo."
 };
 
-export const viewport: Viewport = { themeColor: "#176b52" };
+export const viewport: Viewport = { themeColor: "#192747" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="es"><body>{children}<PwaRegistration /></body></html>;

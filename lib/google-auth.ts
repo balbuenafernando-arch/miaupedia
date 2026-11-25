@@ -2,7 +2,7 @@ export const googleCallbackPath = "/auth/callback";
 export const googleReturnCookie = "miaupedia-oauth-return";
 
 export function googleReturnPath(path?: string) {
-  return path && /^\/recomendaciones(?:\/[a-zA-Z0-9_-]+)?$/.test(path) ? path : "/";
+  return path && /^\/(?:recomendaciones(?:\/[a-zA-Z0-9_-]+)?|pasar-la-voz|guardados|perfil|fijas\/[0-9a-f-]+|sedes\/[a-zA-Z0-9_-]+|espacio-personal\/(?:mis-gatos|agenda))$/.test(path) ? path : "/";
 }
 
 export async function googleSignInAvailable(signal: AbortSignal) {
