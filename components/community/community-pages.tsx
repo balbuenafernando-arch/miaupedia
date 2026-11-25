@@ -1,22 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { Bookmark,CalendarDays,Cat,ChevronRight,LogOut } from "lucide-react";
+import { Bookmark, LogOut, MessageCircle, UserRound } from "lucide-react";
+import Image from "next/image";
+import { MiaupediaMark } from "@/components/miaupedia-logo";
+import { GoogleAccess } from "./community-auth";
 import { useCallback,useState } from "react";
 import { createClient } from "@/lib/supabase";
-import { branchExperiences, findBranch, listSavedFijas } from "@/lib/community";
+import { branchExperiences, findBranch, listOwnFijas, listSavedFijas } from "@/lib/community";
 import { useCatalogResource } from "@/components/recommendations/use-catalog-resource";
 import { DirectoryCard } from "./community-feed";
 import { useCommunityAccess } from "./community-shell";
 import { formatDate } from "./community-format";
 
 export function CommunitySaved() {
-  const {userId,requireAccount}=useCommunityAccess();
+  const {userId}=useCommunityAccess();
   return <section>
     <h1>Guardados</h1>
     {userId ? <SavedList key={userId}/> : <div className="community-empty">
       <Bookmark aria-hidden="true"/><p>Inicia sesión para volver a tus fijas guardadas.</p>
-      <button className="community-primary" disabled={userId===undefined} onClick={()=>requireAccount(()=>undefined)}>Ingresar</button>
+      <GoogleAccess disabled={userId===undefined}/>
     </div>}
   </section>;
 }
@@ -29,24 +32,84 @@ function SavedList() {
   const items=resource.data;
   return items.length ? <ul className="community-list">{items.map(item=><li key={item.id}>
     <DirectoryCard item={{...item,kind:"fija",slug:null,business_type:null,average_rating:null,experience_count:null}}/>
-  </li>)}</ul> : <p>Aún no has guardado fijas. <Link href="/">Explorar la comunidad</Link></p>;
+  </li>)}</ul> : <div className="community-empty"><Bookmark aria-hidden="true"/><p>Aún no has guardado fijas.</p><Link className="community-secondary" href="/">Explorar la comunidad</Link></div>;
+}
+
+function googleAvatar(value:unknown) {
+  if (typeof value !== "string") return undefined;
+  try {
+    const url = new URL(value);
+    if (url.protocol === "https:" && url.hostname.endsWith(".googleusercontent.com") && !url.username && !url.password) return url.href;
+  } catch {}
+  return undefined;
 }
 
 export function CommunityProfile() {
-  const {userId,requireAccount}=useCommunityAccess();
+  const {user}=useCommunityAccess();
   const [message,setMessage]=useState("");
-  return <section className="community-narrow">
-    <h1>Perfil</h1>
-    {userId ? <button className="community-secondary" onClick={async()=>{
-      const result=await createClient()?.auth.signOut({scope:"local"});
-      setMessage(result && !result.error ? "Sesión cerrada." : "No pudimos cerrar la sesión.");
-    }}><LogOut size={17}/> Cerrar sesión</button>
-      : <button className="community-primary" disabled={userId===undefined} onClick={()=>requireAccount(()=>undefined)}>Ingresar</button>}
+  const [signingOut,setSigningOut]=useState(false);
+
+  if (user === undefined) return <p className="community-status" role="status">Cargando perfil…</p>;
+  if (!user) return <section className="community-invitation community-narrow">
+    <span className="community-illustration"><MiaupediaMark/></span>
+    <h1>Bienvenido a MIAUPEDIA</h1>
+    <p>Únete para compartir tus fijas y guardar las que te sirvan.</p>
+    <GoogleAccess/>
     {message && <p role="status">{message}</p>}
-    <div className="community-profile-links">
-      <Link href="/espacio-personal/mis-gatos"><Cat size={21} aria-hidden="true"/> Mis gatos <ChevronRight size={17} aria-hidden="true"/></Link>
-      <Link href="/espacio-personal/agenda"><CalendarDays size={21} aria-hidden="true"/> Agenda <ChevronRight size={17} aria-hidden="true"/></Link>
+  </section>;
+
+  const name = [user.user_metadata.full_name,user.user_metadata.name,user.user_metadata.display_name]
+    .find((value): value is string => typeof value === "string" && !!value.trim()) ?? "Miauamigo";
+  const avatar = googleAvatar(user.user_metadata.avatar_url ?? user.user_metadata.picture);
+  return <section className="community-narrow">
+    <div className="community-profile">
+      <span className="community-avatar">{avatar ? <Image src={avatar} alt="" width={72} height={72}
+        unoptimized referrerPolicy="no-referrer"/> : <UserRound size={34} aria-hidden="true"/>}</span>
+      <h1>{name}</h1>
+      {user.email && <p>{user.email}</p>}
+      <button type="button" className="community-secondary" disabled={signingOut} onClick={async () => {
+        setSigningOut(true);
+        try {
+          const client = createClient();
+          if (!client) throw new Error("Sin acceso");
+          const {error} = await client.auth.signOut({scope:"local"});
+          if (error) throw error;
+          setMessage("Sesión cerrada.");
+        } catch {
+          setMessage("No pudimos cerrar la sesión.");
+        } finally { setSigningOut(false); }
+      }}><LogOut size={17} aria-hidden="true"/> Cerrar sesión</button>
+      {message && <p role="status">{message}</p>}
     </div>
+    <OwnPosts key={user.id}/>
+  </section>;
+}
+
+function OwnPosts() {
+  const [page,setPage]=useState(0);
+  const load=useCallback((signal:AbortSignal)=>listOwnFijas(page,signal),[page]);
+  const {resource,refresh}=useCatalogResource(load);
+  return <section aria-labelledby="own-fijas">
+    <h2 id="own-fijas">Tus publicaciones</h2>
+    {resource.status === "loading" && <p className="community-status" role="status">Cargando publicaciones…</p>}
+    {resource.status === "error" && <div className="community-empty">
+      <p>No pudimos cargar tus publicaciones.</p><button className="community-secondary" onClick={refresh}>Reintentar</button>
+    </div>}
+    {resource.status === "ready" && <>
+      {resource.data.items.length ? <ul className="community-list">{resource.data.items.map(item=>
+        <li key={item.id}>
+          {item.pending ? <article className="community-card">
+            <span className="community-tag">Sede en revisión</span><h3>{item.title}</h3>
+          </article> : <DirectoryCard item={{...item,kind:"fija",slug:null,business_type:null,average_rating:null,experience_count:null}}/>}
+        </li>)}</ul> : <div className="community-empty">
+          <MessageCircle aria-hidden="true"/><p>Aún no has publicado fijas.</p>
+          <Link className="community-primary" href="/pasar-la-voz">Compartir una fija</Link>
+        </div>}
+      {(page > 0 || resource.data.more) && <nav className="community-actions" aria-label="Paginación de tus publicaciones">
+        <button className="community-secondary" disabled={!page} onClick={()=>setPage(page-1)}>Anterior</button>
+        <button className="community-secondary" disabled={!resource.data.more} onClick={()=>setPage(page+1)}>Siguiente</button>
+      </nav>}
+    </>}
   </section>;
 }
 

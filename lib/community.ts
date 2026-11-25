@@ -175,3 +175,13 @@ export async function reportCommunity(fijaId: string, reason: ReportReason, targ
     update_id:target?.kind === "update" ? target.id : null});
   requireSuccess(error,"No pudimos enviar el reporte.","Ya enviaste un reporte sobre este contenido.");
 }
+
+export type OwnFija = Fija & {pending: boolean};
+
+export async function listOwnFijas(page:number, signal:AbortSignal): Promise<{items:OwnFija[];more:boolean}> {
+  const {data,error} = await db().rpc("own_community_posts", {page_offset:page*20})
+    .abortSignal(signal).returns<OwnFija[]>();
+  requireSuccess(error, "No pudimos cargar tus publicaciones.");
+  const items = Array.isArray(data) ? data : [];
+  return {items:items.slice(0,20), more:items.length>20};
+}

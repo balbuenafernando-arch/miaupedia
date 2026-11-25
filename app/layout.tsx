@@ -9,10 +9,11 @@ import "./profile-completion.css";
 
 export const metadata: Metadata = {
   title: "Miaupedia — Mejores decisiones para tu gato",
-  description: "Descubre productos, servicios y veterinarias recomendadas por personas con gatos como el tuyo."
+  description: "Descubre y comparte recomendaciones para cuidar mejor a tus gatos.",
+  icons: { icon: { url: "/icons/miaupedia-favicon.png", sizes: "32x32", type: "image/png" } }
 };
 
-export const viewport: Viewport = { themeColor: "#192747" };
+export const viewport: Viewport = { themeColor: "#192747", viewportFit: "cover" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="es"><body>{children}<PwaRegistration /></body></html>;
