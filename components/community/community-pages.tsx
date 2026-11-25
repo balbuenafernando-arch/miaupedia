@@ -41,9 +41,12 @@ function SavedList() {
 }
 
 function PrivateAvatar({user}: {user:User}) {
-  const [failed,setFailed]=useState(false);
-  return <span className="community-avatar">{!failed && googleAvatarSources(user).length
-    ? <Image src="/api/perfil/avatar" alt="" width={72} height={72} unoptimized onError={()=>setFailed(true)}/>
+  const [attempt,setAttempt]=useState(0);
+  const google=googleAvatarSources(user);
+  const source=google.length ? ["/api/perfil/avatar",...google][attempt] : undefined;
+  return <span className="community-avatar">{source
+    ? <Image key={source} src={source} alt="" width={72} height={72} unoptimized
+        referrerPolicy="no-referrer" onError={()=>setAttempt(attempt+1)}/>
     : <MiaupediaMark/>}</span>;
 }
 
