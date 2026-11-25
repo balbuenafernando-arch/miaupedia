@@ -122,6 +122,8 @@
   border-radius: 20px; background: #fff; color: var(--navy); margin: 0 auto 12px;
 }
 .community-profile { border-radius: var(--radius); padding: 20px 16px; background: var(--lilac); overflow-wrap: anywhere; }
+.community-profile + section { margin-top: 18px; }
+.community-profile + section > h2 { margin: 0 0 8px; }
 .community-profile p { margin: 0 0 12px; }
 .community-profile button + p { margin: 12px 0 0; }
 .community-avatar { inline-size: 72px; block-size: 72px; border-radius: 50%; overflow: hidden; }
