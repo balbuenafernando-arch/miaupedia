@@ -1,7 +1,8 @@
 "use client";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Cat, Check, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles, X } from "lucide-react";
 import { createClient } from "@/lib/supabase";
+import { googleCallbackPath, googleReturnCookie, googleReturnPath, googleSignInAvailable } from "@/lib/google-auth";
 import type { CatProfile } from "@/lib/use-persistent-state";
 import { missingProfileFields, profileCompletion } from "@/lib/cat-profile";
 export type DemoUser = {
@@ -19,8 +20,45 @@ export function AuthModal({ onClose, onAuthenticated, deviceOnly = false }: {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
+    const [googleAvailable, setGoogleAvailable] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
+
+    useEffect(() => {
+        if (deviceOnly) return;
+        const controller = new AbortController();
+        void googleSignInAvailable(controller.signal).then(available => {
+            if (!controller.signal.aborted) setGoogleAvailable(available);
+        }).catch(() => undefined);
+        return () => controller.abort();
+    }, [deviceOnly]);
+
+    async function signInWithGoogle() {
+        const supabase = createClient();
+        if (!supabase || !googleAvailable || googleLoading || loading) return;
+        setGoogleLoading(true);
+        setMessage("");
+        try {
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: "google",
+                options: {
+                    redirectTo: new URL(googleCallbackPath, location.origin).href,
+                    queryParams: { prompt: "select_account" },
+                    skipBrowserRedirect: true,
+                },
+            });
+            if (error || !data.url) throw new Error("No pudimos conectar con Google.");
+            const target = encodeURIComponent(googleReturnPath(location.pathname));
+            document.cookie = `${googleReturnCookie}=${target}; Path=${googleCallbackPath}; Max-Age=600; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
+            location.assign(data.url);
+        } catch {
+            setGoogleLoading(false);
+            setMessage("No pudimos abrir el acceso con Google. Inténtalo de nuevo.");
+        }
+    }
+
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        if (googleLoading) return;
         setLoading(true);
         setMessage("");
         const form = new FormData(event.currentTarget);
@@ -67,13 +105,17 @@ export function AuthModal({ onClose, onAuthenticated, deviceOnly = false }: {
     <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
       <button className="close" onClick={onClose} aria-label="Cerrar"><X /></button>
       <div className="auth-brand"><span><Cat /></span><h2>{mode === "signup" ? "Únete a Miaupedia" : mode === "reset" ? "Recupera tu acceso" : "Qué bueno verte"}</h2><p>{mode === "signup" ? "Crea tu cuenta y mejora las decisiones para tu gato." : mode === "reset" ? "Te enviaremos un enlace seguro a tu correo." : "Tus gatos, favoritos y recordatorios te esperan."}</p></div>
+      {googleAvailable && mode === "login" && <button type="button" className="google-auth-button"
+        onClick={() => void signInWithGoogle()} disabled={googleLoading || loading}>
+        {googleLoading ? "Abriendo Google…" : "Continuar con Google"}
+      </button>}
       <form onSubmit={submit} className="stack-form">
         {mode === "signup" && <label>Nombre <span><Cat size={17}/><input name="name" required autoComplete="name" placeholder="Tu nombre"/></span></label>}
         <label>Correo electrónico <span><Mail size={17}/><input name="email" required type="email" autoComplete="email" placeholder="tu@correo.com"/></span></label>
         {mode !== "reset" && <label>Contraseña <span><LockKeyhole size={17}/><input name="password" required minLength={8} type={showPassword ? "text" : "password"} autoComplete={mode === "login" ? "current-password" : "new-password"} placeholder="Mínimo 8 caracteres"/><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label="Mostrar contraseña">{showPassword ? <EyeOff /> : <Eye />}</button></span></label>}
         {emailSelfService && mode === "login" && <button type="button" className="text-link" onClick={() => setMode("reset")}>Olvidé mi contraseña</button>}
-        {message && <p className="form-message">{message}</p>}
-        <button className="primary full" disabled={loading}>{loading ? "Procesando…" : mode === "login" ? "Iniciar sesión" : mode === "signup" ? "Crear mi cuenta" : "Enviar enlace"}</button>
+        {message && <p className="form-message" role="alert">{message}</p>}
+        <button className="primary full" disabled={loading || googleLoading}>{loading ? "Procesando…" : mode === "login" ? "Iniciar sesión" : mode === "signup" ? "Crear mi cuenta" : "Enviar enlace"}</button>
       </form>
       <p className="auth-switch">{!emailSelfService ? "Acceso para cuentas habilitadas." : mode === "login" ? <>¿Primera vez? <button onClick={() => setMode("signup")}>Crea una cuenta</button></> : <button onClick={() => setMode("login")}><ArrowLeft size={14}/> Volver a iniciar sesión</button>}</p>
       {(deviceOnly || !createClient()) && <span className="demo-mode"><ShieldCheck size={14}/> Modo demo local: los datos quedan en este navegador</span>}

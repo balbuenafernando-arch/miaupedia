@@ -103,7 +103,7 @@ function MiaupediaWorkspace({ deviceOnly, switchWorkspace }: {
                     setReminders(remote.reminders);
                     setUserReviews(remote.userReviews);
                     setSaved(remote.follows);
-                    setUser({ id: account.id, email: account.email ?? "", name: account.user_metadata.display_name || "Miauamigo" });
+                    setUser({ id: account.id, email: account.email ?? "", name: account.user_metadata.display_name || account.user_metadata.full_name || account.user_metadata.name || "Miauamigo" });
                 } catch {
                     if (active && request === generation) flash("No pudimos cargar tu cuenta. Recarga para volver a intentarlo.");
                 }
@@ -115,7 +115,17 @@ function MiaupediaWorkspace({ deviceOnly, switchWorkspace }: {
     const toggleSaved = (id: number) => requireUser(() => { const willFollow = !saved.includes(id); setSaved(v => willFollow ? [...v, id] : v.filter(x => x !== id)); if (user && !deviceOnly) void saveDemoFollow(user.id, id, willFollow).catch(() => flash("Cambio guardado localmente; sincronización pendiente.")); flash(willFollow ? "Guardado en Favoritos" : "Eliminado de favoritos"); });
     const addCompare = (id: number) => { setCompare(v => v.includes(id) ? v.filter(x => x !== id) : v.length < 3 ? [...v, id] : v); if (compare.length >= 3 && !compare.includes(id))
         flash("Puedes comparar hasta 3 productos"); };
-    const signOut = async () => { if (!deviceOnly) await createClient()?.auth.signOut(); setUser(null); flash("Sesión cerrada"); };
+    const signOut = async () => {
+        if (!deviceOnly) {
+            const result = await createClient()?.auth.signOut({ scope: "local" });
+            if (!result || result.error) {
+                flash("No pudimos cerrar tu sesión. Inténtalo de nuevo.");
+                return;
+            }
+        }
+        setUser(null);
+        flash("Sesión cerrada");
+    };
     const saveCatProfile = async (cat: CatProfile) => {
         setCats(editingCat ? cats.map(current => current.id === cat.id ? cat : current) : [...cats, cat]);
         const nextReminders = syncBirthdayReminder(cat, reminders, deviceOnly);
