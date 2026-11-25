@@ -105,7 +105,7 @@ export function PinPicker({initial,select,cancel,publicPin=true,mapped=false}:{
     resolveAddress(point);
   }
 
-  async function useGps() {
+  async function requestGps() {
     const request=++revision.current;
     setGpsBusy(true);setError("");
     try {
@@ -129,7 +129,7 @@ export function PinPicker({initial,select,cancel,publicPin=true,mapped=false}:{
         {showMap?"Ocultar mapa":"Elegir en el mapa"}
       </button>
       {publicPin && <button type="button" className="community-secondary" disabled={gpsBusy}
-        onClick={()=>void useGps()}>{gpsBusy?"Buscando tu ubicación…":"Usar mi ubicación"}</button>}
+        onClick={()=>void requestGps()}>{gpsBusy?"Buscando tu ubicación…":"Usar mi ubicación"}</button>}
     </div>
     {showMap && <>
       <Map point={draft} recenter={gpsCenter} change={pickPoint}/>
