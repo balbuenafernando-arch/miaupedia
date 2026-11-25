@@ -1,8 +1,11 @@
-import { Cat, Heart } from "lucide-react";
+import Image from "next/image";
 
 export function MiaupediaLogo() {
-  return <div className="logo">
-    <span className="logo-mark"><Cat size={20} aria-hidden="true" /><Heart className="community-logo-heart" size={11} aria-hidden="true"/></span>
-    <span>Miau<span>pedia</span></span>
-  </div>;
+  return <Image className="miaupedia-wordmark" src="/icons/miaupedia-wordmark.png"
+    alt="MIAUPEDIA" width={148} height={54} unoptimized/>;
+}
+
+export function MiaupediaMark() {
+  return <Image className="miaupedia-medal" src="/icons/miaupedia-medalla.png"
+    alt="" width={41} height={53} unoptimized/>;
 }

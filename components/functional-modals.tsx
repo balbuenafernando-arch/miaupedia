@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Cat, Check, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles, X } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { googleSignInAvailable, startGoogleSignIn } from "@/lib/google-auth";
+import { MiaupediaLogo } from "@/components/miaupedia-logo";
 import type { CatProfile } from "@/lib/use-persistent-state";
 import { missingProfileFields, profileCompletion } from "@/lib/cat-profile";
 export type DemoUser = {
@@ -92,7 +93,7 @@ export function AuthModal({ onClose, onAuthenticated, deviceOnly = false }: {
     return <div className="modal-backdrop" role="presentation" onMouseDown={e => e.target === e.currentTarget && onClose()}>
     <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
       <button className="close" onClick={onClose} aria-label="Cerrar"><X /></button>
-      <div className="auth-brand"><span><Cat /></span><h2>{mode === "signup" ? "Únete a Miaupedia" : mode === "reset" ? "Recupera tu acceso" : "Qué bueno verte"}</h2><p>{mode === "signup" ? "Crea tu cuenta y mejora las decisiones para tu gato." : mode === "reset" ? "Te enviaremos un enlace seguro a tu correo." : "Tus gatos, favoritos y recordatorios te esperan."}</p></div>
+      <div className="auth-brand"><MiaupediaLogo/><h2>{mode === "signup" ? "Únete a Miaupedia" : mode === "reset" ? "Recupera tu acceso" : "Qué bueno verte"}</h2><p>{mode === "signup" ? "Crea tu cuenta y mejora las decisiones para tu gato." : mode === "reset" ? "Te enviaremos un enlace seguro a tu correo." : "Tus gatos, favoritos y recordatorios te esperan."}</p></div>
       {googleAvailable && mode === "login" && <button type="button" className="google-auth-button"
         onClick={() => void signInWithGoogle()} disabled={googleLoading || loading}>
         {googleLoading ? "Abriendo Google…" : "Continuar con Google"}

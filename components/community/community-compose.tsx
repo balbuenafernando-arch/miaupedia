@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MessageCircleHeart } from "lucide-react";
+import { MiaupediaMark } from "@/components/miaupedia-logo";
 import { GoogleAccess } from "./community-auth";
 import { useRouter } from "next/navigation";
 import { useCallback,useRef,useState, type FormEvent } from "react";
@@ -14,7 +14,7 @@ export function CommunityCompose({slug}: {slug?:string}) {
   const {userId} = useCommunityAccess();
   if (userId === undefined) return <p className="community-status" role="status">Cargando acceso…</p>;
   if (!userId) return <section className="community-invitation community-narrow">
-    <span className="community-illustration"><MessageCircleHeart size={32} aria-hidden="true"/></span>
+    <span className="community-illustration"><MiaupediaMark/></span>
     <h1>¿Tienes una buena fija?</h1>
     <p>Compártela con quienes también quieren lo mejor para sus gatos.</p>
     <GoogleAccess/>

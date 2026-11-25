@@ -17,10 +17,8 @@
 .community-main { padding: clamp(20px, 4vw, 38px) 0 26px; }
 .community-narrow { max-width: 680px; margin-inline: auto; }
 .community-header { background: #fff; border-bottom: 1px solid var(--edge); }
+.community-bar .miaupedia-wordmark { width: 148px; height: auto; }
 .community-bar { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-.community-bar .logo { color: var(--navy); }
-.community-bar .logo-mark { background: var(--navy); color: white; position: relative; }
-.community-bar .community-logo-heart { display: block; position: absolute; right: -3px; bottom: 1px; color: var(--coral); fill: var(--coral); }
 .community-nav { display: flex; align-items: stretch; gap: 4px; }
 .community-nav a {
   display: flex; min-height: 48px; align-items: center; justify-content: center; gap: 5px;
@@ -121,6 +119,7 @@
   display: grid; place-items: center; inline-size: 64px; block-size: 64px;
   border-radius: 20px; background: #fff; color: var(--navy); margin: 0 auto 12px;
 }
+.community-illustration .miaupedia-medal { width: auto; height: 49px; }
 .community-profile { border-radius: var(--radius); padding: 20px 16px; background: var(--lilac); overflow-wrap: anywhere; }
 .community-profile + section { margin-top: 18px; }
 .community-profile + section > h2 { margin: 0 0 8px; }
@@ -129,9 +128,7 @@
 .community-avatar { inline-size: 72px; block-size: 72px; border-radius: 50%; overflow: hidden; }
 .community-avatar img { inline-size: 100%; block-size: 100%; object-fit: cover; }
 .community-auth { padding-top: 30px; }
-.community-auth .logo { justify-content: center; margin: 4px 30px 17px; }
-.community-auth .logo-mark { background: var(--navy); position: relative; color: white; }
-.community-auth .community-logo-heart { display: block; position: absolute; right: -3px; bottom: 1px; color: var(--coral); fill: var(--coral); }
+.community-auth .miaupedia-wordmark { margin: 0 auto 12px; }
 .community-google-access { max-width: 100%; }
 .community-google { gap: 9px; min-height: 46px; }
 .community-google-mark {
@@ -149,6 +146,7 @@
   .community-wrap { width: min(100% - 28px, 920px); }
   .community-main { padding-top: 16px; }
   .community-bar { min-height: 56px; }
+  .community-bar .miaupedia-wordmark { width: 128px; }
   .community-nav {
     position: fixed; inset: auto 0 0; z-index: 30; background: #fff; border-top: 1px solid var(--edge);
     display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 0;

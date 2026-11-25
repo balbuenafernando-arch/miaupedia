@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Bookmark, LogOut, MessageCircle, UserRound } from "lucide-react";
 import Image from "next/image";
+import { MiaupediaMark } from "@/components/miaupedia-logo";
 import { GoogleAccess } from "./community-auth";
 import { useCallback,useState } from "react";
 import { createClient } from "@/lib/supabase";
@@ -50,7 +51,7 @@ export function CommunityProfile() {
 
   if (user === undefined) return <p className="community-status" role="status">Cargando perfil…</p>;
   if (!user) return <section className="community-invitation community-narrow">
-    <span className="community-illustration"><UserRound size={32} aria-hidden="true"/></span>
+    <span className="community-illustration"><MiaupediaMark/></span>
     <h1>Bienvenido a MIAUPEDIA</h1>
     <p>Únete para compartir tus fijas y guardar las que te sirvan.</p>
     <GoogleAccess/>
