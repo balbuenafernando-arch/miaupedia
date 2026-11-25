@@ -143,6 +143,7 @@
 }
 .community-footer a { display: grid; place-items: center; min-height: 44px; text-align: center; }
 @media (max-width: 660px) {
+  body:has(.community-shell) { padding-bottom: 0; }
   .community-wrap { width: min(100% - 28px, 920px); }
   .community-main { padding-top: 16px; }
   .community-bar { min-height: 56px; }
