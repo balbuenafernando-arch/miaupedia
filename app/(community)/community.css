@@ -195,3 +195,19 @@
   .community-banner-copy h1 { font-size: clamp(1.3rem,5.7vw,1.6rem); }
   .community-banner-copy p { font-size: .88rem; line-height: 1.35; }
 }
+
+.community-welcome { text-align: center; background: #fff9f2; }
+.community-welcome .community-actions, .community-profile-controls { justify-content: center; }
+.community-welcome-skip { display: flex; margin-inline-start: auto; }
+.community-welcome-art { min-height: 118px; display: flex; align-items: center; justify-content: center; gap: 9px;
+  background: var(--lilac); border-radius: var(--radius); color: var(--navy); }
+.community-welcome-art .miaupedia-medal { inline-size: 65px; block-size: auto; }
+.community-welcome-step { font-size: .85rem; margin-block: 14px 5px; }
+.community-welcome h2:focus { outline: none; }
+.community-share { min-width: 0; }
+.community-card > .community-share { margin-top: 8px; }
+.community-share span[role="status"] { margin-inline-start: 8px; color: var(--muted); font-size: .85rem; }
+.community-share label { display: grid; gap: 4px; font-size: .85rem; }
+.community-share input { min-width: 0; width: 100%; }
+.community-profile-controls { margin: 14px 0 18px; }
+.community-avatar img.miaupedia-medal { width: 64%; height: 64%; object-fit: contain; }

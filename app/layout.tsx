@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { canonicalOrigin, shareMetadata } from "@/lib/share-metadata";
 import { PwaRegistration } from "@/components/pwa-registration";
 import "./globals.css";
 import "./functional.css";
@@ -8,9 +9,11 @@ import "./dashboard.css";
 import "./profile-completion.css";
 
 export const metadata: Metadata = {
+  ...shareMetadata("/"),
+  metadataBase: new URL(canonicalOrigin),
   title: "Miaupedia — Mejores decisiones para tu gato",
   description: "Descubre y comparte recomendaciones para cuidar mejor a tus gatos.",
-  icons: { icon: { url: "/icons/miaupedia-favicon.png", sizes: "32x32", type: "image/png" } }
+  icons: { icon: { url: "/icons/beta4-favicon.png", sizes: "32x32", type: "image/png" } }
 };
 
 export const viewport: Viewport = { themeColor: "#192747", viewportFit: "cover" };

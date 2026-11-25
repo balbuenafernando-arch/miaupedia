@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { CommunityShare } from "./community-share";
 import { AuthorLink, PostPhoto } from "./community-post-meta";
 import { MapPin, PawPrint, Search, Star, ThumbsUp } from "lucide-react";
 import { useCallback,useState } from "react";
@@ -83,5 +84,6 @@ export function DirectoryCard({item}: {item:DirectoryItem}) {
       {business ? <span><Star size={15} aria-hidden="true"/>{item.average_rating ?? "Sin valoración"} · {item.experience_count} experiencias</span>
         : <span><ThumbsUp size={15} aria-hidden="true"/>{item.utiles} útiles</span>}
     </div>
+    {!business && <CommunityShare path={`/fijas/${item.id}`} title={item.title}/>}
   </article>;
 }

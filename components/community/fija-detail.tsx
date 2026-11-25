@@ -10,6 +10,7 @@ import {
 import { validateCommunityContent } from "@/lib/content-filter";
 import { useCatalogResource } from "@/components/recommendations/use-catalog-resource";
 import { useCommunityAccess } from "./community-shell";
+import { CommunityShare } from "./community-share";
 import { CommunityNotice } from "./community-notice";
 import { AuthorLink, PostPhoto } from "./community-post-meta";
 import { formatDate,formatPrice } from "./community-format";
@@ -118,6 +119,7 @@ function FijaContent({item}: {item:Fija}) {
           aria-pressed={current.vote} onClick={()=>toggle("vote")}><ThumbsUp size={16}/> Me sirvió · {actionCount?.count ?? item.utiles}</button>
         <button className="community-secondary" disabled={busy || marks.resource.status==="loading"}
           aria-pressed={current.save} onClick={()=>toggle("save")}><Bookmark size={16}/> {current.save?"Quitar guardado":"Guardar"}</button>
+        <CommunityShare path={`/fijas/${item.id}`} title={item.title}/>
         <button className="community-link-button" onClick={event=>startReport(event.currentTarget)}><Flag size={15}/> Reportar</button>
       </div>
     </article>
