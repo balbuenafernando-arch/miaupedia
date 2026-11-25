@@ -1,3 +1,4 @@
+import type { FijaPin,Point,Radius } from "@/lib/fija-geolocation";
 import { createClient } from "@/lib/supabase";
 import { legalDocuments, requiredDocuments } from "@/lib/community-legal";
 
@@ -15,7 +16,7 @@ export type Fija = {
 };
 export type DirectoryItem = Omit<Fija, "autor" | "freshness_at" | "business_id" | "rating"> & {
   autor: string | null; kind: "fija" | "business"; slug: string | null;
-  business_type: BranchType | null; average_rating: number | null; experience_count: number | null;
+  distance_km?: number; business_type: BranchType | null; average_rating: number | null; experience_count: number | null;
 };
 type LegacyExperience = {id:string;puntuacion:number;comentario:string|null;created_at:string};
 export type CommunityComment = { id: string; autor: string; body: string; created_at: string };
@@ -42,6 +43,14 @@ export async function searchCommunity(text: string, sort: Sort, page: number, si
     .abortSignal(signal).returns<DirectoryItem[]>();
   requireSuccess(error,"No pudimos cargar la búsqueda.");
   const items = Array.isArray(data) ? data : [];
+  return {items:items.slice(0,20),more:items.length>20};
+}
+
+export async function searchNearby(term:string,point:Point,radius:Radius,page:number,signal:AbortSignal) {
+  const {data,error}=await db().rpc("nearby_fijas",{term,latitude:point.lat,longitude:point.lon,radius,page_offset:page*20})
+    .abortSignal(signal).returns<DirectoryItem[]>();
+  requireSuccess(error,"No pudimos buscar fijas cercanas.");
+  const items=Array.isArray(data)?data:[];
   return {items:items.slice(0,20),more:items.length>20};
 }
 
@@ -100,10 +109,11 @@ export async function acceptCommunityDocuments() {
 
 export async function publishCommunity(input: {
   id: string; title: string; body: string; location: string; price: number | null;
-  branch: Branch | null; rating: number | null;
+  branch: Branch | null; rating: number | null; pin?:FijaPin|null;
   proposal: {type: BranchType; name: string; district: string; address: string} | null;
 }) {
-  const {data,error} = await db().rpc("pasar_la_voz", {
+  const {data,error} = await db().rpc(input.pin?"publish_fija_with_pin":"pasar_la_voz", {
+    ...(input.pin?{pin:input.pin}:{}),
     post_id:input.id,post_title:input.title,post_body:input.body,post_location:input.location || null,
     post_price:input.price,branch_id:input.branch?.id ?? null,stars:input.rating,
     branch_type:input.proposal?.type ?? null,branch_name:input.proposal?.name ?? null,

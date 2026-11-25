@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { MessageCircle, Search } from "lucide-react";
+import { MessageCircle, Search, Smartphone } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { MiaupediaMark } from "@/components/miaupedia-logo";
+
 
 const steps = [
   ["Bienvenido a MIAUPEDIA","Descubre experiencias y recomendaciones compartidas por personas que también aman a sus gatos"],
@@ -38,10 +38,13 @@ export function CommunityOnboarding() {
   return <dialog ref={dialog} className="community-dialog community-welcome" aria-labelledby="welcome-title"
     aria-describedby="welcome-copy" onCancel={event=>{event.preventDefault();dismiss();}}>
     <button type="button" className="community-link-button community-welcome-skip" onClick={dismiss}>Omitir</button>
-    <div className="community-welcome-art" aria-hidden="true">
-      {step===0 ? <MiaupediaMark/> : <>
-        <Image src="/icons/miaupedia-gato-explorar.webp" alt="" width={124} height={113} unoptimized/>
-        {step===1 ? <Search size={28}/> : <><MiaupediaMark/><MessageCircle size={28}/></>}
+    <div className={`community-welcome-art welcome-scene welcome-scene-${step}`} aria-hidden="true">
+      {step===0 && <span className="welcome-phone"><Smartphone size={65}/></span>}
+      <Image className="welcome-cat" src="/icons/gato-bienvenida.png" alt="" width={130} height={118} unoptimized/>
+      {step===1 && <span className="welcome-prop"><Search size={32}/></span>}
+      {step===2 && <>
+        <span className="welcome-prop"><MessageCircle size={32}/></span>
+        <Image className="welcome-cat welcome-cat-peer" src="/icons/gato-bienvenida.png" alt="" width={118} height={108} unoptimized/>
       </>}
     </div>
     <p className="community-welcome-step" aria-live="polite">Paso {step+1} de {steps.length}</p>

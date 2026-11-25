@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bookmark, Flag, MapPin, MessageCircle, ThumbsUp } from "lucide-react";
+import { Bookmark, Flag, MessageCircle, ThumbsUp } from "lucide-react";
 import { useCallback,useEffect,useRef,useState, type FormEvent } from "react";
 import {
   addCommunityComment,findFija,getCommunityMarks,loadFijaActivity,reportCommunity,
@@ -10,6 +10,7 @@ import {
 import { validateCommunityContent } from "@/lib/content-filter";
 import { useCatalogResource } from "@/components/recommendations/use-catalog-resource";
 import { useCommunityAccess } from "./community-shell";
+import { FijaLocationDetail } from "./fija-location-detail";
 import { CommunityShare } from "./community-share";
 import { CommunityNotice } from "./community-notice";
 import { AuthorLink, PostPhoto } from "./community-post-meta";
@@ -111,7 +112,6 @@ function FijaContent({item}: {item:Fija}) {
       <p className="community-prose">{item.body}</p>
       <PostPhoto source={item.image_url}/>
       <div className="community-meta">
-        {item.location && <span><MapPin size={15} aria-hidden="true"/>{item.location}</span>}
         {item.price !== null && <span>Precio publicado · {formatPrice(item.price)}</span>}
       </div>
       <div className="community-actions">
@@ -123,6 +123,7 @@ function FijaContent({item}: {item:Fija}) {
         <button className="community-link-button" onClick={event=>startReport(event.currentTarget)}><Flag size={15}/> Reportar</button>
       </div>
     </article>
+    <FijaLocationDetail id={item.id} legacy={item.location}/>
     <div className="community-actions">
       <button className="community-secondary" onClick={event=>{
         const button=event.currentTarget;
