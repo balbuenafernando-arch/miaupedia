@@ -2,5 +2,5 @@
     <string name="app_name" translatable="false">Miaupedia</string>
     <string name="start_url" translatable="false">https://miaupedia.vercel.app/</string>
     <string name="asset_statements" translatable="false">[{\"relation\":[\"delegate_permission/common.handle_all_urls\"],\"target\":{\"namespace\":\"web\",\"site\":\"https://miaupedia.vercel.app\"}}]</string>
-    <color name="miaupedia_green">#176B52</color>
+    <color name="miaupedia_navy">#192747</color>
 </resources>
